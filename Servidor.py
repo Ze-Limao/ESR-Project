@@ -1,12 +1,12 @@
 import sys, socket
-
+import cv2
+import numpy as np
 from random import randint
-import sys, traceback, threading, socket
+import traceback, threading
 
-from VideoStream import VideoStream
 from RtpPacket import RtpPacket
 
-class Servidor:	
+class Servidor:    
 
 	clientInfo = {}
 
@@ -19,14 +19,14 @@ class Servidor:
 			if self.clientInfo['event'].is_set():
 				break
 				
-			data = self.clientInfo['videoStream'].nextFrame()
-			if data:
-				frameNumber = self.clientInfo['videoStream'].frameNbr()
+			ret, data = self.clientInfo['videoStream'].read()
+			if ret:
+				frameNumber = int(self.clientInfo['videoStream'].get(cv2.CAP_PROP_POS_FRAMES))
 				try:
 					address = self.clientInfo['rtpAddr']
 					port = int(self.clientInfo['rtpPort'])
-					packet =  self.makeRtp(data, frameNumber)
-					self.clientInfo['rtpSocket'].sendto(packet,(address,port))
+					packet = self.makeRtp(data, frameNumber)
+					self.clientInfo['rtpSocket'].sendto(packet, (address, port))
 				except:
 					print("Connection Error")
 					print('-'*60)
@@ -43,18 +43,19 @@ class Servidor:
 		extension = 0
 		cc = 0
 		marker = 0
-		pt = 26 # MJPEG type
+		pt = 26  # MJPEG type
 		seqnum = frameNbr
 		ssrc = 0
-		
+
+		# Encode the frame to JPEG
+		_, encoded_image = cv2.imencode('.jpg', payload)
 		rtpPacket = RtpPacket()
 		
-		rtpPacket.encode(version, padding, extension, cc, seqnum, marker, pt, ssrc, payload)
+		rtpPacket.encode(version, padding, extension, cc, seqnum, marker, pt, ssrc, encoded_image.tobytes())
 		print("Encoding RTP Packet: " + str(seqnum))
 		
 		return rtpPacket.getPacket()
 
-	
 	def main(self):
 		try:
 			# Get the media file name
@@ -65,8 +66,12 @@ class Servidor:
 			filename = "movie.Mjpeg"
 			print("Using default video file ->  " + filename)
 
-		# videoStram
-		self.clientInfo['videoStream'] = VideoStream(filename)
+		# videoStream
+		self.clientInfo['videoStream'] = cv2.VideoCapture(filename)
+		if not self.clientInfo['videoStream'].isOpened():
+			print("Error opening video stream or file")
+			sys.exit(1)
+
 		# socket
 		self.clientInfo['rtpPort'] = 25000
 		self.clientInfo['rtpAddr'] = socket.gethostbyname('127.0.0.1')
@@ -74,11 +79,8 @@ class Servidor:
 		# Create a new socket for RTP/UDP
 		self.clientInfo["rtpSocket"] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.clientInfo['event'] = threading.Event()
-		self.clientInfo['worker']= threading.Thread(target=self.sendRtp)
+		self.clientInfo['worker'] = threading.Thread(target=self.sendRtp)
 		self.clientInfo['worker'].start()
 
 if __name__ == "__main__":
 	(Servidor()).main()
-
-
-
