@@ -1,8 +1,8 @@
 from random import randint
 import sys, traceback, threading, socket
 
-from VideoStream import VideoStream
-from RtpPacket import RtpPacket
+from ..utils.stream.VideoStream import VideoStream
+from ..utils.stream.RtpPacket import RtpPacket
 
 class ServerWorker:
 	SETUP = 'SETUP'

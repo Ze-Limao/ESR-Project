@@ -4,7 +4,7 @@ import numpy as np
 from random import randint
 import traceback, threading
 
-from RtpPacket import RtpPacket
+from ..utils.stream.RtpPacket import RtpPacket
 
 class Servidor:    
 
