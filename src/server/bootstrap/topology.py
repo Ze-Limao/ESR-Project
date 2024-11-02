@@ -1,45 +1,49 @@
+from typing import TypedDict, List, Dict
+
+class Connection(TypedDict):
+    node: str
+    speed: float
+
+class Node(TypedDict):
+    ip: str
+    connections: List[Connection]
+
 class Topology:
     def __init__(self):
-        self.adjacency_list = {}
+        self.topology: Dict[str, Node] = {}
 
-    def add_node(self, node):
-        if node not in self.adjacency_list:
-            self.adjacency_list[node] = []
+    def add_node(self, node: str, ip: str):
+        if node not in self.topology:
+            self.topology[node] = {'ip': ip, 'connections': []}
 
-    def add_edge(self, node1, node2, weight=None, directed=False):
-        if node1 not in self.adjacency_list:
-            self.add_node(node1)
-        if node2 not in self.adjacency_list:
-            self.add_node(node2)
-        
-        # Add an edge from node1 to node2
-        self.adjacency_list[node1].append((node2, weight))
-        
-        # If undirected, also add an edge from node2 to node1
-        if not directed:
-            self.adjacency_list[node2].append((node1, weight))
+    def add_edge(self, node1: str, node2: str, speed=1.0):
+        if node1 in self.topology and node2 in self.topology:
+            self.topology[node1]['connections'].append({'node': node2, 'speed': speed})
+            self.topology[node2]['connections'].append({'node': node1, 'speed': speed})
+        else:
+            raise ValueError("Both nodes must exist before adding an edge.")
 
-    def remove_edge(self, node1, node2, directed=False):
-        self.adjacency_list[node1] = [edge for edge in self.adjacency_list[node1] if edge[0] != node2]
-        if not directed:
-            self.adjacency_list[node2] = [edge for edge in self.adjacency_list[node2] if edge[0] != node1]
-
-    def remove_node(self, node):
-        for key in list(self.adjacency_list):
-            self.adjacency_list[key] = [edge for edge in self.adjacency_list[key] if edge[0] != node]
-        if node in self.adjacency_list:
-            del self.adjacency_list[node]
+    def remove_node(self, node: str):
+        for key in list(self.topology):
+            self.topology[key]['connections'] = [x for x in self.topology[key]['connections'] if x['node'] != node]
+        if node in self.topology:
+            del self.topology[node]
 
     def get_vertices(self):
-        return list(self.adjacency_list.keys())
+        return list(self.topology.keys())
 
     def get_edges(self):
         edges = []
-        for node, connections in self.adjacency_list.items():
-            for edge in connections:
-                edges.append((node, edge[0], edge[1]))  # (start, end, weight)
+        seen = set()
+        for node, data in self.topology.items():
+            for edge in data['connections']:
+                if (edge['node'], node) not in seen:  # Avoid duplicating edges for undirected graphs
+                    edges.append((node, edge['node'], edge['speed']))
+                    seen.add((node, edge['node']))
         return edges
 
     def display(self):
-        for node in self.adjacency_list:
-            print(f"{node} -> {self.adjacency_list[node]}")
+        for node, data in self.topology.items():
+            print(f"{node} ({data['ip']}):")
+            for conn in data['connections']:
+                print(f"  -> {conn['node']} (speed: {conn['speed']})")
