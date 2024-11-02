@@ -7,6 +7,7 @@ class Connection(TypedDict):
 class Node(TypedDict):
     ip: str
     connections: List[Connection]
+    alive: bool
 
 class Topology:
     def __init__(self):
@@ -14,7 +15,7 @@ class Topology:
 
     def add_node(self, node: str, ip: str):
         if node not in self.topology:
-            self.topology[node] = {'ip': ip, 'connections': []}
+            self.topology[node] = {'ip': ip, 'connections': [], 'alive': False}
 
     def add_edge(self, node1: str, node2: str, speed=1.0):
         if node1 in self.topology and node2 in self.topology:
@@ -44,6 +45,6 @@ class Topology:
 
     def display(self):
         for node, data in self.topology.items():
-            print(f"{node} ({data['ip']}):")
+            print(f"{node} ({data['ip']} - Alive? {data['alive']}):")
             for conn in data['connections']:
                 print(f"  -> {conn['node']} (speed: {conn['speed']})")
