@@ -48,3 +48,15 @@ class Topology:
             print(f"{node} ({data['ip']} - Alive? {data['alive']}):")
             for conn in data['connections']:
                 print(f"  -> {conn['node']} (speed: {conn['speed']})")
+
+    def get_name_by_ip(self, ip: str):
+        for node, data in self.topology.items():
+            if data['ip'] == ip:
+                return node
+        return None
+    
+    def get_neighbors(self, node: str):
+        return self.topology[node]['connections']
+
+    def get_ip(self, node: str):
+        return self.topology[node]['ip']

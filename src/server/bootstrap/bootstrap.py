@@ -1,6 +1,7 @@
 import sys
 import socket
 from ...utils.filereader import FileReader
+from ...utils.messages import Messages
 from .topology import Topology
 
 class Bootstrap:
@@ -9,7 +10,7 @@ class Bootstrap:
         self.topology = Topology()
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind(('', 8080))
+        self.socket.bind(('', 8081))
         self.socket.listen(5)
         
         self.read_file()
@@ -35,16 +36,28 @@ class Bootstrap:
     def get_topology(self):
         return self.topology        
 
-    def receive_connection(self):
+    def receive_connections(self):
         while True:
             conn, addr = self.socket.accept()
             print(f"Connection from {addr}")
-            # Reply with "World" to the new connection
-            conn.send(b"Hello")
+            
+            name = self.topology.get_name_by_ip(addr[0])
+            if name is not None:
+                neighbors = self.topology.get_neighbors(name)
+                for neighbor in neighbors:
+                    neighbor['name'] = self.topology.get_ip(neighbor['node'])
+                Messages.send(conn, Messages.encode_list(neighbors))
+
+            else:
+                print(f"Unknown node with IP {addr[0]}")
 
             conn.close()
     
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python3 -m src.server.bootstrap.bootstrap <file_path>")
+        sys.exit(1)
+
     bootstrap = Bootstrap(sys.argv[1])
     topology = bootstrap.get_topology()
-    bootstrap.receive_connection()
+    bootstrap.receive_connections()

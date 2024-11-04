@@ -1,22 +1,31 @@
 import socket
 import sys
+from ..utils.messages import Messages
 
 class oNode:
-    def __init__(self, name: str, ip: str):
-        self.name = name
-        self.ip = ip
+    def __init__(self, interface_ip: str, server_ip: str):
+        self.interface_ip = interface_ip
+        self.server_ip = server_ip
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((ip, 8080))
+        self.socket.bind((self.interface_ip, 0))
+        self.neighbors = []
 
-    def send_message(self, message: str):
-        self.socket.send(message.encode())
-        response = self.socket.recv(1024)
-        print(f"Received: {response.decode()}")
+    def connect(self):
+        self.socket.connect((self.server_ip, 8081))
+        print(f"Conectado ao servidor em {self.server_ip}:8080")
+
+        msg = Messages.receive(self.socket)
+        self.neighbors = Messages.decode_list(msg)
+
+        print(f"Vizinhos: {self.neighbors}")
 
     def close(self):
         self.socket.close()
 
 if __name__ == "__main__":
-    node = oNode("oNode1", sys.argv[1])
-    node.send_message("Hello")
-    node.close()
+    if len(sys.argv) < 3:
+        print("Usage: python3 src.oNode.oNode <interface_ip> <server_ip>")
+        sys.exit(1)
+
+    node = oNode(sys.argv[1], sys.argv[2])
+    node.connect()
