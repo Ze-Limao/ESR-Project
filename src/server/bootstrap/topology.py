@@ -58,5 +58,24 @@ class Topology:
     def get_neighbors(self, node: str):
         return self.topology[node]['connections']
 
+    def get_neighbors_alive(self, node: str):
+        return [x for x in self.topology[node]['connections'] if self.topology[x['node']]['alive']]
+
     def get_ip(self, node: str):
         return self.topology[node]['ip']
+    
+    def turn_alive(self, ip: str):
+        for node, data in self.topology.items():
+            if data['ip'] == ip:
+                self.topology[node]['alive'] = True
+                return 1
+        print(f"Unknown node with IP {ip}")
+        return 0
+
+    def turn_dead(self, ip: str):
+        for node, data in self.topology.items():
+            if data['ip'] == ip:
+                self.topology[node]['alive'] = False
+                return 1
+        print(f"Unknown node with IP {ip}")
+        return 0

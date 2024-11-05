@@ -13,11 +13,15 @@ class oNode:
     def connect(self):
         self.socket.connect((self.server_ip, 8081))
         print(f"Conectado ao servidor em {self.server_ip}:8080")
-
-        msg = Messages.receive(self.socket)
-        self.neighbors = Messages.decode_list(msg)
-
-        print(f"Vizinhos: {self.neighbors}")
+        try:
+            while True:                
+                msg = Messages.receive(self.socket)
+                self.neighbors = Messages.decode_list(msg)
+                print(f"Vizinhos: {self.neighbors}")
+                Messages.send(self.socket, Messages.encode("OK"))
+        except KeyboardInterrupt:
+            Messages.send(self.socket, b'')
+            self.close()
 
     def close(self):
         self.socket.close()

@@ -1,5 +1,7 @@
 import sys
 import socket
+import time
+import threading
 from ...utils.filereader import FileReader
 from ...utils.messages import Messages
 from .topology import Topology
@@ -36,23 +38,60 @@ class Bootstrap:
     def get_topology(self):
         return self.topology        
 
-    def receive_connections(self):
-        while True:
-            conn, addr = self.socket.accept()
-            print(f"Connection from {addr}")
-            
-            name = self.topology.get_name_by_ip(addr[0])
-            if name is not None:
-                neighbors = self.topology.get_neighbors(name)
-                for neighbor in neighbors:
-                    neighbor['name'] = self.topology.get_ip(neighbor['node'])
-                Messages.send(conn, Messages.encode_list(neighbors))
+    def send_neighbors(self, conn: socket.socket, ip: str):
+        name = self.topology.get_name_by_ip(ip)
+        if name is not None:
+            neighbors = self.topology.get_neighbors(name)
+            for neighbor in neighbors:
+                neighbor['name'] = self.topology.get_ip(neighbor['node'])
+            Messages.send(conn, Messages.encode_list(neighbors))
+        else:
+            print(f"Unknown node with IP {ip}")
 
-            else:
-                print(f"Unknown node with IP {addr[0]}")
+    def send_neighbors_alive(self, conn: socket.socket, ip: str):
+        name = self.topology.get_name_by_ip(ip)
+        if name is not None:
+            neighbors = self.topology.get_neighbors_alive(name)
+            for neighbor in neighbors:
+                neighbor['name'] = self.topology.get_ip(neighbor['node'])
+            Messages.send(conn, Messages.encode_list(neighbors))
+        else:
+            print(f"Unknown node with IP {ip}")
 
+    def handle_connection(self, conn: socket.socket, addr: str):
+        print(f"Connection from {addr}")
+        ip = addr[0]
+
+        check = self.topology.turn_alive(ip)
+
+        if check == 0:
+            print(f"Unknown node with IP {ip}")
             conn.close()
-    
+            return
+
+        while True:
+            self.send_neighbors_alive(conn, ip)
+            msg = Messages.receive(conn)
+            if msg == b'':
+                break
+            msg = Messages.decode(msg)
+            print(f"Received message from {ip}: {msg}")
+            time.sleep(5)
+
+        self.topology.turn_dead(ip)
+        conn.close()
+
+    def receive_connections(self):
+        try:
+            while True:
+                conn, addr = self.socket.accept()
+                thread = threading.Thread(target=self.handle_connection, args=(conn, addr))
+                thread.start()
+        except KeyboardInterrupt:
+            print("\nServer disconnected")
+            self.socket.close()
+            sys.exit(0)
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python3 -m src.server.bootstrap.bootstrap <file_path>")
