@@ -77,7 +77,7 @@ class Bootstrap:
             sys.exit(0)
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
+    if len(sys.argv) != 2:
         print("Usage: python3 -m src.server.bootstrap.bootstrap <file_path>")
         sys.exit(1)
 
