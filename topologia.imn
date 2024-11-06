@@ -22,8 +22,8 @@ node n1 {
 	!
     }
     canvas c1
-    iconcoords {239.0 181.0}
-    labelcoords {239.0 213.0}
+    iconcoords {242.0 254.0}
+    labelcoords {242.0 286.0}
     interface-peer {eth0 n13}
     interface-peer {eth1 n2}
     interface-peer {eth2 n11}
@@ -54,8 +54,8 @@ node n2 {
 	!
     }
     canvas c1
-    iconcoords {362.0 40.0}
-    labelcoords {362.0 72.0}
+    iconcoords {365.0 113.0}
+    labelcoords {365.0 145.0}
     interface-peer {eth0 n1}
     interface-peer {eth1 n11}
     interface-peer {eth2 n20}
@@ -94,8 +94,8 @@ node n3 {
 	!
     }
     canvas c1
-    iconcoords {661.6666666666666 262.6666666666667}
-    labelcoords {661.6666666666666 294.6666666666667}
+    iconcoords {664.6666666666666 335.6666666666667}
+    labelcoords {664.6666666666666 367.6666666666667}
     interface-peer {eth2 n4}
     interface-peer {eth3 n7}
     interface-peer {eth4 n19}
@@ -128,8 +128,8 @@ node n4 {
 	!
     }
     canvas c1
-    iconcoords {771.0 151.66666666666666}
-    labelcoords {806.0 171.66666666666666}
+    iconcoords {774.0 224.66666666666666}
+    labelcoords {809.0 244.66666666666666}
     interface-peer {eth0 n5}
     interface-peer {eth1 n3}
     interface-peer {eth2 n19}
@@ -156,8 +156,8 @@ node n5 {
 	!
     }
     canvas c1
-    iconcoords {881.0 269.0}
-    labelcoords {900.0 302.0}
+    iconcoords {884.0 342.0}
+    labelcoords {903.0 375.0}
     interface-peer {eth1 n10}
     interface-peer {eth2 n4}
     interface-peer {eth3 n19}
@@ -187,8 +187,8 @@ node n7 {
 	!
     }
     canvas c1
-    iconcoords {656.6666666666666 492.6666666666667}
-    labelcoords {656.6666666666666 524.6666666666666}
+    iconcoords {659.6666666666666 565.6666666666667}
+    labelcoords {659.6666666666666 597.6666666666666}
     interface-peer {eth3 n3}
     interface-peer {eth4 n19}
     interface-peer {eth0 n22}
@@ -215,8 +215,8 @@ node n8 {
 	!
     }
     canvas c1
-    iconcoords {363.6666666666667 487.0}
-    labelcoords {363.6666666666667 519.0}
+    iconcoords {366.6666666666667 560.0}
+    labelcoords {366.6666666666667 592.0}
     interface-peer {eth2 n9}
     interface-peer {eth1 n22}
     interface-peer {eth0 n24}
@@ -227,6 +227,10 @@ node n9 {
     model router
     network-config {
 	hostname n9
+	!
+	interface eth4
+	 ip address 10.0.34.1/24
+	 ipv6 address 2001:34::1/64
 	!
 	interface eth3
 	 ip address 10.0.23.2/24
@@ -246,12 +250,13 @@ node n9 {
 	!
     }
     canvas c1
-    iconcoords {238.0 343.0}
-    labelcoords {238.0 375.0}
+    iconcoords {241.0 416.0}
+    labelcoords {241.0 448.0}
     interface-peer {eth0 n12}
     interface-peer {eth1 n11}
     interface-peer {eth2 n8}
     interface-peer {eth3 n1}
+    interface-peer {eth4 n24}
 }
 
 node n10 {
@@ -265,8 +270,8 @@ node n10 {
 	!
     }
     canvas c1
-    iconcoords {948.0 175.66666666666663}
-    labelcoords {952.0 158.66666666666663}
+    iconcoords {951.0 248.66666666666663}
+    labelcoords {955.0 231.66666666666663}
     interface-peer {eth0 n5}
 }
 
@@ -302,8 +307,8 @@ node n11 {
 	!
     }
     canvas c1
-    iconcoords {362.0 264.0}
-    labelcoords {362.0 296.0}
+    iconcoords {371.0 299.0}
+    labelcoords {371.0 331.0}
     interface-peer {eth0 n1}
     interface-peer {eth1 n9}
     interface-peer {eth3 n2}
@@ -319,8 +324,8 @@ node n12 {
 	!
     }
     canvas c1
-    iconcoords {172.0 383.0}
-    labelcoords {172.0 407.0}
+    iconcoords {175.0 456.0}
+    labelcoords {175.0 480.0}
     interface-peer {e0 n18}
     interface-peer {e1 n17}
     interface-peer {e2 n9}
@@ -333,8 +338,8 @@ node n13 {
 	!
     }
     canvas c1
-    iconcoords {188.0 124.0}
-    labelcoords {190.0 152.0}
+    iconcoords {191.0 197.0}
+    labelcoords {193.0 225.0}
     interface-peer {e0 n14}
     interface-peer {e1 n15}
     interface-peer {e2 n16}
@@ -353,8 +358,8 @@ node n14 {
 	!
     }
     canvas c1
-    iconcoords {119.0 73.0}
-    labelcoords {119.0 105.0}
+    iconcoords {122.0 146.0}
+    labelcoords {122.0 178.0}
     interface-peer {eth0 n13}
 }
 
@@ -370,8 +375,8 @@ node n15 {
 	!
     }
     canvas c1
-    iconcoords {48.0 142.0}
-    labelcoords {48.0 174.0}
+    iconcoords {51.0 215.0}
+    labelcoords {51.0 247.0}
     interface-peer {eth0 n13}
 }
 
@@ -387,8 +392,8 @@ node n16 {
 	!
     }
     canvas c1
-    iconcoords {97.0 241.0}
-    labelcoords {97.0 273.0}
+    iconcoords {100.0 314.0}
+    labelcoords {100.0 346.0}
     interface-peer {eth0 n13}
 }
 
@@ -404,8 +409,8 @@ node n17 {
 	!
     }
     canvas c1
-    iconcoords {168.0 483.0}
-    labelcoords {168.0 515.0}
+    iconcoords {171.0 556.0}
+    labelcoords {171.0 588.0}
     interface-peer {eth0 n12}
 }
 
@@ -421,8 +426,8 @@ node n18 {
 	!
     }
     canvas c1
-    iconcoords {91.0 431.0}
-    labelcoords {91.0 463.0}
+    iconcoords {94.0 504.0}
+    labelcoords {94.0 536.0}
     interface-peer {eth0 n12}
 }
 
@@ -450,8 +455,8 @@ node n19 {
 	!
     }
     canvas c1
-    iconcoords {767.3333333333334 396.0}
-    labelcoords {767.3333333333334 428.0}
+    iconcoords {770.3333333333334 469.0}
+    labelcoords {770.3333333333334 501.0}
     interface-peer {eth0 n3}
     interface-peer {eth1 n7}
     interface-peer {eth3 n4}
@@ -482,8 +487,8 @@ node n6 {
 	!
     }
     canvas c1
-    iconcoords {652.0 39.333333333333336}
-    labelcoords {652.0 71.33333333333333}
+    iconcoords {655.0 112.33333333333334}
+    labelcoords {655.0 144.33333333333331}
     interface-peer {eth0 n4}
     interface-peer {eth2 n3}
     interface-peer {eth1 n20}
@@ -514,8 +519,8 @@ node n20 {
 	!
     }
     canvas c1
-    iconcoords {516.6666666666666 149.33333333333334}
-    labelcoords {516.6666666666666 181.33333333333334}
+    iconcoords {519.6666666666666 222.33333333333334}
+    labelcoords {519.6666666666666 254.33333333333334}
     interface-peer {eth0 n6}
     interface-peer {eth1 n2}
     interface-peer {eth2 n11}
@@ -550,8 +555,8 @@ node n21 {
 	!
     }
     canvas c1
-    iconcoords {521.3333333333334 332.6666666666667}
-    labelcoords {521.3333333333334 364.6666666666667}
+    iconcoords {518.3333333333334 404.6666666666667}
+    labelcoords {518.3333333333334 436.6666666666667}
     interface-peer {eth0 n3}
     interface-peer {eth1 n11}
     interface-peer {eth2 n24}
@@ -583,8 +588,8 @@ node n22 {
 	!
     }
     canvas c1
-    iconcoords {514.0 490.6666666666667}
-    labelcoords {514.0 522.6666666666666}
+    iconcoords {517.0 563.6666666666667}
+    labelcoords {517.0 595.6666666666666}
     interface-peer {eth0 n7}
     interface-peer {eth1 n8}
     interface-peer {eth2 n24}
@@ -607,8 +612,8 @@ node n23 {
 	!
     }
     canvas c1
-    iconcoords {514.6666666666666 21.333333333333332}
-    labelcoords {514.6666666666666 53.333333333333336}
+    iconcoords {515.6666666666666 113.33333333333333}
+    labelcoords {515.6666666666666 145.33333333333334}
     interface-peer {eth0 n2}
     interface-peer {eth1 n6}
 }
@@ -618,6 +623,10 @@ node n24 {
     model router
     network-config {
 	hostname n24
+	!
+	interface eth4
+	 ip address 10.0.34.2/24
+	 ipv6 address 2001:34::2/64
 	!
 	interface eth3
 	 ip address 10.0.32.2/24
@@ -637,12 +646,13 @@ node n24 {
 	!
     }
     canvas c1
-    iconcoords {362.0 378.0}
-    labelcoords {362.0 410.0}
+    iconcoords {368.0 432.0}
+    labelcoords {368.0 464.0}
     interface-peer {eth0 n11}
     interface-peer {eth1 n8}
     interface-peer {eth2 n21}
     interface-peer {eth3 n22}
+    interface-peer {eth4 n9}
 }
 
 link l1 {
@@ -837,6 +847,11 @@ link l36 {
 
 link l39 {
     nodes {n22 n21}
+    bandwidth 0
+}
+
+link l40 {
+    nodes {n9 n24}
     bandwidth 0
 }
 
