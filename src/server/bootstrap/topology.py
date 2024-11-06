@@ -1,32 +1,32 @@
 from typing import TypedDict, List, Dict
 
-class Connection(TypedDict):
-    node: str
-    speed: float
-
 class Node(TypedDict):
     ip: str
-    connections: List[Connection]
-    alive: bool
+    connections: List[str]
 
 class Topology:
     def __init__(self):
         self.topology: Dict[str, Node] = {}
 
     def add_node(self, node: str, ip: str):
+        self.display()
         if node not in self.topology:
-            self.topology[node] = {'ip': ip, 'connections': [], 'alive': False}
+            self.topology[node] = {'ip': ip, 'connections': []}
+        else:
+            raise ValueError("Node already exists in the topology.")
 
-    def add_edge(self, node1: str, node2: str, speed=1.0):
+    def add_edge(self, node1: str, node2: str):
         if node1 in self.topology and node2 in self.topology:
-            self.topology[node1]['connections'].append({'node': node2, 'speed': speed})
-            self.topology[node2]['connections'].append({'node': node1, 'speed': speed})
+            if node2 not in self.topology[node1]['connections']:
+                self.topology[node1]['connections'].append(node2)
+            if node1 not in self.topology[node2]['connections']:
+                self.topology[node2]['connections'].append(node1)
         else:
             raise ValueError("Both nodes must exist before adding an edge.")
 
     def remove_node(self, node: str):
         for key in list(self.topology):
-            self.topology[key]['connections'] = [x for x in self.topology[key]['connections'] if x['node'] != node]
+            self.topology[key]['connections'] = list(filter(lambda x: x != node, self.topology[key]['connections']))
         if node in self.topology:
             del self.topology[node]
 
@@ -37,17 +37,17 @@ class Topology:
         edges = []
         seen = set()
         for node, data in self.topology.items():
-            for edge in data['connections']:
-                if (edge['node'], node) not in seen:  # Avoid duplicating edges for undirected graphs
-                    edges.append((node, edge['node'], edge['speed']))
-                    seen.add((node, edge['node']))
+            for neighbor in data['connections']:
+                if neighbor not in seen:
+                    edges.append((node, neighbor))
+            seen.add(node)
         return edges
 
     def display(self):
         for node, data in self.topology.items():
-            print(f"{node} ({data['ip']} - Alive? {data['alive']}):")
+            print(f"{node} ({data['ip']}):")
             for conn in data['connections']:
-                print(f"  -> {conn['node']} (speed: {conn['speed']})")
+                print(f"  -> {conn}")
 
     def get_name_by_ip(self, ip: str):
         for node, data in self.topology.items():
@@ -58,24 +58,5 @@ class Topology:
     def get_neighbors(self, node: str):
         return self.topology[node]['connections']
 
-    def get_neighbors_alive(self, node: str):
-        return [x for x in self.topology[node]['connections'] if self.topology[x['node']]['alive']]
-
     def get_ip(self, node: str):
         return self.topology[node]['ip']
-    
-    def turn_alive(self, ip: str):
-        for node, data in self.topology.items():
-            if data['ip'] == ip:
-                self.topology[node]['alive'] = True
-                return 1
-        print(f"Unknown node with IP {ip}")
-        return 0
-
-    def turn_dead(self, ip: str):
-        for node, data in self.topology.items():
-            if data['ip'] == ip:
-                self.topology[node]['alive'] = False
-                return 1
-        print(f"Unknown node with IP {ip}")
-        return 0

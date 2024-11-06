@@ -11,7 +11,7 @@ class oNode:
         self.neighbors = []
 
     def connect(self):
-        self.socket.connect((self.server_ip, 8081))
+        self.socket.connect((self.server_ip, 8080))
         print(f"Conectado ao servidor em {self.server_ip}:8080")
         try:
             while True:                

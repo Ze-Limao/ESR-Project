@@ -12,7 +12,7 @@ class Bootstrap:
         self.topology = Topology()
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind(('', 8081))
+        self.socket.bind(('', 8080))
         self.socket.listen(5)
         
         self.read_file()
@@ -24,6 +24,7 @@ class Bootstrap:
 
     def parse_contents(self, contents: str):
         lines = contents.split('\n')
+        
         n_nodes = int(lines[0])
         n_connections = int(lines[1])
         for i in range(2,n_nodes+2):
@@ -41,19 +42,10 @@ class Bootstrap:
     def send_neighbors(self, conn: socket.socket, ip: str):
         name = self.topology.get_name_by_ip(ip)
         if name is not None:
+            # list with the name of the neighbors
             neighbors = self.topology.get_neighbors(name)
-            for neighbor in neighbors:
-                neighbor['name'] = self.topology.get_ip(neighbor['node'])
-            Messages.send(conn, Messages.encode_list(neighbors))
-        else:
-            print(f"Unknown node with IP {ip}")
-
-    def send_neighbors_alive(self, conn: socket.socket, ip: str):
-        name = self.topology.get_name_by_ip(ip)
-        if name is not None:
-            neighbors = self.topology.get_neighbors_alive(name)
-            for neighbor in neighbors:
-                neighbor['name'] = self.topology.get_ip(neighbor['node'])
+            # get ips and construct a list with a list of the name and the ip as a dict
+            neighbors = [{'name': neighbor, 'ip': self.topology.get_ip(neighbor)} for neighbor in neighbors]
             Messages.send(conn, Messages.encode_list(neighbors))
         else:
             print(f"Unknown node with IP {ip}")
@@ -62,15 +54,8 @@ class Bootstrap:
         print(f"Connection from {addr}")
         ip = addr[0]
 
-        check = self.topology.turn_alive(ip)
-
-        if check == 0:
-            print(f"Unknown node with IP {ip}")
-            conn.close()
-            return
-
         while True:
-            self.send_neighbors_alive(conn, ip)
+            self.send_neighbors(conn, ip)
             msg = Messages.receive(conn)
             if msg == b'':
                 break
@@ -78,7 +63,6 @@ class Bootstrap:
             print(f"Received message from {ip}: {msg}")
             time.sleep(5)
 
-        self.topology.turn_dead(ip)
         conn.close()
 
     def receive_connections(self):
