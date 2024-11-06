@@ -1,6 +1,11 @@
 import socket
 import sys
 from ..utils.messages import Messages
+from typing import TypedDict, Dict 
+
+class Neighbor(TypedDict):
+    ip: str
+    alive: bool
 
 class oNode:
     def __init__(self, interface_ip: str, server_ip: str):
@@ -8,16 +13,29 @@ class oNode:
         self.server_ip = server_ip
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind((self.interface_ip, 0))
-        self.neighbors = []
+        
+        self.socket_onodes = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket_onodes.bind((self.interface_ip, 9090))
+
+        self.neighbors: Dict[str, Neighbor] = {}
+
+    def register_neighbors(self, neighbors: list):
+        for neighbor in neighbors:
+            ip = neighbor['ip']
+            name = neighbor['name']
+            if name not in self.neighbors:
+                self.neighbors[name] = {'ip': ip, 'alive': False}
 
     def connect(self):
         self.socket.connect((self.server_ip, 8080))
         print(f"Conectado ao servidor em {self.server_ip}:8080")
         try:
-            while True:                
+            while True:
                 msg = Messages.receive(self.socket)
-                self.neighbors = Messages.decode_list(msg)
-                print(f"Vizinhos: {self.neighbors}")
+                neighbors = Messages.decode_list(msg)
+                print(f"Vizinhos: {neighbors}")
+                self.register_neighbors(neighbors)
+
                 Messages.send(self.socket, Messages.encode("OK"))
         except KeyboardInterrupt:
             Messages.send(self.socket, b'')
