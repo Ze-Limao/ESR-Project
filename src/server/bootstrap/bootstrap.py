@@ -3,7 +3,7 @@ import socket
 import time
 import threading
 from ...utils.filereader import FileReader
-from ...utils.messages import Messages
+from ...utils.messages import Messages_UDP
 from .topology import Topology
 
 class Bootstrap:
@@ -11,7 +11,7 @@ class Bootstrap:
         self.file_path = file_path
         self.topology = Topology()
 
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(('', 8080))
         self.socket.listen(5)
         
@@ -46,7 +46,7 @@ class Bootstrap:
             neighbors = self.topology.get_neighbors(name)
             # get ips and construct a list with a list of the name and the ip as a dict
             neighbors = [{'name': neighbor, 'ip': self.topology.get_ip(neighbor)} for neighbor in neighbors]
-            Messages.send(conn, Messages.encode_list(neighbors))
+            Messages_UDP.send(conn, Messages_UDP.encode_list(neighbors))
         else:
             print(f"Unknown node with IP {ip}")
 
@@ -56,10 +56,10 @@ class Bootstrap:
 
         while True:
             self.send_neighbors(conn, ip)
-            msg = Messages.receive(conn)
+            msg = Messages_UDP.receive(conn)
             if msg == b'':
                 break
-            msg = Messages.decode(msg)
+            msg = Messages_UDP.decode(msg)
             print(f"Received message from {ip}: {msg}")
             time.sleep(5)
 

@@ -1,6 +1,6 @@
 import socket
 import sys
-from ..utils.messages import Messages
+from ..utils.messages import Messages_UDP
 from typing import TypedDict, Dict 
 
 class Neighbor(TypedDict):
@@ -12,7 +12,7 @@ class oNode:
         self.interface_ip = interface_ip
         self.server_ip = server_ip
         self.server_port = 8080
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind((self.interface_ip, 0))
         
         self.socket_onodes = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -32,15 +32,15 @@ class oNode:
         try:
             while True:
                 # Recebe a mensagem do servidor
-                msg = Messages.receive(self.socket)
-                neighbors = Messages.decode_list(msg)
+                msg = Messages_UDP.receive(self.socket)
+                neighbors = Messages_UDP.decode_list(msg)
                 print(f"Vizinhos: {neighbors}")
                 self.register_neighbors(neighbors)
                 
                 # Envia uma mensagem de confirmação ao servidor
-                Messages.send(self.socket, Messages.encode("OK"))
+                Messages_UDP.send(self.socket, Messages_UDP.encode("OK"))
         except KeyboardInterrupt:
-            Messages.send(self.socket, b'')
+            Messages_UDP.send(self.socket, b'')
             self.close()
 
     def close(self):
