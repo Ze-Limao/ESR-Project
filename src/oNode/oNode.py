@@ -3,20 +3,21 @@ import sys
 from ..utils.messages import Messages_UDP
 from typing import TypedDict, Dict 
 
+BOOTSTRAP_IP = '10.0.13.10'
+BOOTSTRAP_PORT = 8080
+ONODE_PORT = 9090
+
 class Neighbor(TypedDict):
     ip: str
     alive: bool
 
 class oNode:
-    def __init__(self, interface_ip: str, server_ip: str):
-        self.interface_ip = interface_ip
-        self.server_ip = server_ip
-        self.server_port = 8080
+    def __init__(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.bind((self.interface_ip, 0))
+        self.socket.bind(('', 0))
         
         self.socket_onodes = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket_onodes.bind((self.interface_ip, 9090))
+        self.socket_onodes.bind(('', ONODE_PORT))
 
         self.neighbors: Dict[str, Neighbor] = {}
 
@@ -47,9 +48,5 @@ class oNode:
         self.socket.close()
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python3 -m src.oNode.oNode <interface_ip> <server_ip>")
-        sys.exit(1)
-
-    node = oNode(sys.argv[1], sys.argv[2])
+    node = oNode()
     node.connect()

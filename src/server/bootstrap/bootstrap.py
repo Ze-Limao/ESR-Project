@@ -13,28 +13,17 @@ class Bootstrap:
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(('', 8080))
-        self.socket.listen(5)
         
         self.read_file()
 
     def read_file(self):
         file_reader = FileReader(self.file_path)
-        file_contents = file_reader.read()
-        self.parse_contents(file_contents)
-
-    def parse_contents(self, contents: str):
-        lines = contents.split('\n')
-        
-        n_nodes = int(lines[0])
-        n_connections = int(lines[1])
-        for i in range(2,n_nodes+2):
-            name, ip = lines[i].split(' ')
-            self.topology.add_node(name, ip)
-        for i in range(n_nodes+2, n_nodes+n_connections+2):
-            node1, node2 = lines[i].split(' ')
-            self.topology.add_edge(node1, node2)
-
-        self.topology.display()
+        file_contents = file_reader.read_json()
+        if file_contents is not None:
+            self.topology.add_nodes(file_contents)
+            self.topology.display()
+        else:
+            sys.exit(1)
 
     def get_topology(self):
         return self.topology        
@@ -50,26 +39,17 @@ class Bootstrap:
         else:
             print(f"Unknown node with IP {ip}")
 
-    def handle_connection(self, conn: socket.socket, addr: str):
+    def handle_connection(self, data: bytes, addr: str):
         print(f"Connection from {addr}")
         ip = addr[0]
 
-        while True:
-            self.send_neighbors(conn, ip)
-            msg = Messages_UDP.receive(conn)
-            if msg == b'':
-                break
-            msg = Messages_UDP.decode(msg)
-            print(f"Received message from {ip}: {msg}")
-            time.sleep(5)
-
-        conn.close()
+    
 
     def receive_connections(self):
         try:
             while True:
-                conn, addr = self.socket.accept()
-                thread = threading.Thread(target=self.handle_connection, args=(conn, addr))
+                data, addr = self.socket.recvfrom(1024)
+                thread = threading.Thread(target=self.handle_connection, args=(data, addr))
                 thread.start()
         except KeyboardInterrupt:
             print("\nServer disconnected")
