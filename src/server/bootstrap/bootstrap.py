@@ -3,7 +3,7 @@ import socket
 import threading
 from ...utils.filereader import FileReader
 from ...utils.messages import Messages_UDP
-from ...utils.config import BOOTSTRAP_PORT
+from ...utils.config import BOOTSTRAP_PORT, POINTS_OF_PRESENCE
 from .topology import Topology
 
 class Bootstrap:
@@ -29,7 +29,7 @@ class Bootstrap:
         return self.topology        
 
     def send_neighbors(self, ip: str) -> None:
-        neighbors = self.topology.get_neighbors(ip)
+        neighbors = [neighbor['name'] for neighbor in self.topology.get_neighbors(ip)]
         ips_neighbors = self.topology.get_ips_from_list_names(neighbors)
         Messages_UDP.send(self.socket, Messages_UDP.encode_json({'neighbors': ips_neighbors}), ip, BOOTSTRAP_PORT)
         
@@ -40,6 +40,11 @@ class Bootstrap:
             Messages_UDP.send(self.socket, Messages_UDP.encode_json({'new_interface': interface}), ip, BOOTSTRAP_PORT)
         else:
             print(f"Unknown interface with IP {ip}")
+
+    def calculate_paths(self) -> None:
+        for pop in POINTS_OF_PRESENCE:
+            (distances, path) = self.topology.find_best_path(pop)
+            print(f"Best path to {pop}: {path} with distance {distances}")
 
     def receive_connections(self) -> None:
         try:
@@ -64,4 +69,5 @@ if __name__ == "__main__":
 
     bootstrap = Bootstrap(sys.argv[1])
     topology = bootstrap.get_topology()
+    bootstrap.calculate_paths()
     bootstrap.receive_connections()
