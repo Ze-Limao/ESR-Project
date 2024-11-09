@@ -1,9 +1,9 @@
 import sys
 import socket
-import time
 import threading
 from ...utils.filereader import FileReader
 from ...utils.messages import Messages_UDP
+from ...utils.config import BOOTSTRAP_PORT
 from .topology import Topology
 
 class Bootstrap:
@@ -13,64 +13,45 @@ class Bootstrap:
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(('', 8080))
-        self.socket.listen(5)
         
         self.read_file()
 
-    def read_file(self):
+    def read_file(self) -> None:
         file_reader = FileReader(self.file_path)
-        file_contents = file_reader.read()
-        self.parse_contents(file_contents)
+        file_contents = file_reader.read_json()
+        if file_contents is not None:
+            self.topology.add_nodes(file_contents)
+            self.topology.display()
+        else:
+            sys.exit(1)
 
-    def parse_contents(self, contents: str):
-        lines = contents.split('\n')
-        
-        n_nodes = int(lines[0])
-        n_connections = int(lines[1])
-        for i in range(2,n_nodes+2):
-            name, ip = lines[i].split(' ')
-            self.topology.add_node(name, ip)
-        for i in range(n_nodes+2, n_nodes+n_connections+2):
-            node1, node2 = lines[i].split(' ')
-            self.topology.add_edge(node1, node2)
-
-        self.topology.display()
-
-    def get_topology(self):
+    def get_topology(self) -> Topology:
         return self.topology        
 
-    def send_neighbors(self, conn: socket.socket, ip: str):
-        name = self.topology.get_name_by_ip(ip)
-        if name is not None:
-            # list with the name of the neighbors
-            neighbors = self.topology.get_neighbors(name)
-            # get ips and construct a list with a list of the name and the ip as a dict
-            neighbors = [{'name': neighbor, 'ip': self.topology.get_ip(neighbor)} for neighbor in neighbors]
-            Messages_UDP.send(conn, Messages_UDP.encode_list(neighbors))
+    def send_neighbors(self, ip: str) -> None:
+        neighbors = self.topology.get_neighbors(ip)
+        ips_neighbors = self.topology.get_ips_from_list_names(neighbors)
+        Messages_UDP.send(self.socket, Messages_UDP.encode_json({'neighbors': ips_neighbors}), ip, BOOTSTRAP_PORT)
+        
+    def send_interface(self, ip: str) -> None:
+        interface = self.topology.get_primary_interface(ip)
+        if interface is not None:
+            print(f"New interface for {ip}: {interface}")
+            Messages_UDP.send(self.socket, Messages_UDP.encode_json({'new_interface': interface}), ip, BOOTSTRAP_PORT)
         else:
-            print(f"Unknown node with IP {ip}")
+            print(f"Unknown interface with IP {ip}")
 
-    def handle_connection(self, conn: socket.socket, addr: str):
-        print(f"Connection from {addr}")
-        ip = addr[0]
-
-        while True:
-            self.send_neighbors(conn, ip)
-            msg = Messages_UDP.receive(conn)
-            if msg == b'':
-                break
-            msg = Messages_UDP.decode(msg)
-            print(f"Received message from {ip}: {msg}")
-            time.sleep(5)
-
-        conn.close()
-
-    def receive_connections(self):
+    def receive_connections(self) -> None:
         try:
             while True:
-                conn, addr = self.socket.accept()
-                thread = threading.Thread(target=self.handle_connection, args=(conn, addr))
-                thread.start()
+                _, addr = self.socket.recvfrom(1024)
+                if self.topology.correct_interface(addr[0]):
+                    thread = threading.Thread(target=self.send_neighbors, args=(addr[0],))
+                    thread.start()
+                else:
+                    thread = threading.Thread(target=self.send_interface, args=(addr[0],))
+                    thread.start()
+                    
         except KeyboardInterrupt:
             print("\nServer disconnected")
             self.socket.close()

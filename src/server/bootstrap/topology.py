@@ -1,62 +1,56 @@
 from typing import TypedDict, List, Dict
 
 class Node(TypedDict):
-    ip: str
-    connections: List[str]
+    name: str
+    possible_interfaces: List[str]
+    neighbors: List[str]
 
 class Topology:
     def __init__(self):
         self.topology: Dict[str, Node] = {}
 
-    def add_node(self, node: str, ip: str):
-        self.display()
-        if node not in self.topology:
-            self.topology[node] = {'ip': ip, 'connections': []}
-        else:
-            raise ValueError("Node already exists in the topology.")
+    def add_nodes(self, nodes: Dict[str, Node]) -> None:
+        self.topology = nodes
 
-    def add_edge(self, node1: str, node2: str):
-        if node1 in self.topology and node2 in self.topology:
-            if node2 not in self.topology[node1]['connections']:
-                self.topology[node1]['connections'].append(node2)
-            if node1 not in self.topology[node2]['connections']:
-                self.topology[node2]['connections'].append(node1)
-        else:
-            raise ValueError("Both nodes must exist before adding an edge.")
-
-    def remove_node(self, node: str):
-        for key in list(self.topology):
-            self.topology[key]['connections'] = list(filter(lambda x: x != node, self.topology[key]['connections']))
-        if node in self.topology:
-            del self.topology[node]
-
-    def get_vertices(self):
+    def get_vertices(self) -> List[str]:
         return list(self.topology.keys())
 
-    def get_edges(self):
+    def get_edges(self) -> List[tuple]:
         edges = []
         seen = set()
         for node, data in self.topology.items():
-            for neighbor in data['connections']:
+            for neighbor in data['neighbors']:
                 if neighbor not in seen:
                     edges.append((node, neighbor))
             seen.add(node)
         return edges
 
-    def display(self):
+    def display(self) -> None:
         for node, data in self.topology.items():
-            print(f"{node} ({data['ip']}):")
-            for conn in data['connections']:
+            print(f"{node} ({data['name']}):")
+            for conn in data['neighbors']:
                 print(f"  -> {conn}")
 
-    def get_name_by_ip(self, ip: str):
-        for node, data in self.topology.items():
-            if data['ip'] == ip:
-                return node
+    def get_name_by_ip(self, ip: str) -> str:
+        return self.topology[ip]['name']
+
+    def get_neighbors(self, node: str) -> List[str]:
+        return self.topology[node]['neighbors']
+
+    def get_ip(self, name: str) -> str:
+        for ip, data in self.topology.items():
+            if data['name'] == name:
+                return ip
         return None
     
-    def get_neighbors(self, node: str):
-        return self.topology[node]['connections']
-
-    def get_ip(self, node: str):
-        return self.topology[node]['ip']
+    def correct_interface(self, ip: str):
+        return ip in self.topology
+    
+    def get_primary_interface(self, ip: str) -> str:
+        for interface, data in self.topology.items():
+            if ip in data['possible_interfaces']:
+                return interface
+        return None
+    
+    def get_ips_from_list_names(self, names: List[str]) -> List[str]:
+        return [self.get_ip(name) for name in names]
