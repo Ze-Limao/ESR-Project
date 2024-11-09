@@ -1,14 +1,15 @@
 import socket
 import json
+from typing import Union
 
 class Messages_UDP:
-    def encode(message: str):
+    def encode(message: str) -> bytes:
         return message.encode('utf-8')
     
-    def decode(message: str):
+    def decode(message: str) -> str:
         return message.decode('utf-8')
     
-    def send_and_receive(conn: socket.socket, message: bytes, ip: str, port: int, timeout: float = 2.0, retries: int = 3):
+    def send_and_receive(conn: socket.socket, message: bytes, ip: str, port: int, timeout: float = 2.0, retries: int = 3) -> bytes:
         conn.sendto(message, (ip, port))
         conn.settimeout(timeout)
         for _ in range(retries):
@@ -19,9 +20,12 @@ class Messages_UDP:
                 conn.sendto(message, (ip, port))
         return None
     
-    def encode_list(lst: list):
+    def send(conn: socket.socket, message: bytes, ip: str, port: int) -> None:
+        conn.sendto(message, (ip, port))
+
+    def encode_json(lst: Union[list, dict]) -> bytes:
         return json.dumps(lst).encode('utf-8')
-    
-    def decode_list(lst: str):
+
+    def decode_json(lst: bytes) -> Union[list, dict]:
         return json.loads(lst.decode('utf-8'))
       

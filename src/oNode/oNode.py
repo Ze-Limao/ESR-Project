@@ -1,52 +1,44 @@
 import socket
 import sys
 from ..utils.messages import Messages_UDP
-from typing import TypedDict, Dict 
-
-BOOTSTRAP_IP = '10.0.13.10'
-BOOTSTRAP_PORT = 8080
-ONODE_PORT = 9090
-
-class Neighbor(TypedDict):
-    ip: str
-    alive: bool
+from ..utils.config import ONODE_PORT, BOOTSTRAP_IP, BOOTSTRAP_PORT
 
 class oNode:
     def __init__(self):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.bind(('', 0))
+        self.socket_bootstrap = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket_bootstrap.bind(('', BOOTSTRAP_PORT))
         
         self.socket_onodes = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket_onodes.bind(('', ONODE_PORT))
 
-        self.neighbors: Dict[str, Neighbor] = {}
+        self.neighbors = []
 
     def register_neighbors(self, neighbors: list):
-        for neighbor in neighbors:
-            ip = neighbor['ip']
-            name = neighbor['name']
-            if name not in self.neighbors:
-                self.neighbors[name] = {'ip': ip, 'alive': False}
+        self.neighbors = neighbors
+        print(f"Neighbors: {self.neighbors}")
 
-    def connect(self):
-        print(f"Conectado ao servidor em {self.server_ip}:{self.server_port}")
-        try:
-            while True:
-                # Recebe a mensagem do servidor
-                msg = Messages_UDP.receive(self.socket)
-                neighbors = Messages_UDP.decode_list(msg)
-                print(f"Vizinhos: {neighbors}")
-                self.register_neighbors(neighbors)
-                
-                # Envia uma mensagem de confirmação ao servidor
-                Messages_UDP.send(self.socket, Messages_UDP.encode("OK"))
-        except KeyboardInterrupt:
-            Messages_UDP.send(self.socket, b'')
-            self.close()
+    def bind_new_interface(self, interface: str) -> None:
+        print(f"New interface: {interface}")
+        self.socket_bootstrap.close()
+        self.socket_bootstrap = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket_bootstrap.bind((interface, BOOTSTRAP_PORT))
+        self.ask_neighbors()
 
-    def close(self):
+    def ask_neighbors(self) -> None:
+        response_encoded = Messages_UDP.send_and_receive(self.socket_bootstrap, b'', BOOTSTRAP_IP, BOOTSTRAP_PORT)
+        if response_encoded is None:
+            print("No response from bootstrap server")
+            sys.exit(1)
+
+        response_decoded = Messages_UDP.decode_json(response_encoded)
+        if 'new_interface' in response_decoded:
+            self.bind_new_interface(response_decoded['new_interface'])
+        else:
+            self.register_neighbors(response_decoded['neighbors'])
+
+    def close(self) -> None:
         self.socket.close()
 
 if __name__ == "__main__":
     node = oNode()
-    node.connect()
+    node.ask_neighbors()
