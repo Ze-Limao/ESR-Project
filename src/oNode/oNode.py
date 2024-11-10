@@ -12,10 +12,15 @@ class oNode:
         self.socket_onodes.bind(('', ONODE_PORT))
 
         self.neighbors = []
+        self.parent = None
 
     def register_neighbors(self, neighbors: list):
         self.neighbors = neighbors
         print(f"Neighbors: {self.neighbors}")
+
+    def register_parent(self, parent: str):
+        self.parent = parent
+        print(f"Parent: {self.parent}")
 
     def bind_new_interface(self, interface: str) -> None:
         print(f"New interface: {interface}")
@@ -35,6 +40,7 @@ class oNode:
             self.bind_new_interface(response_decoded['new_interface'])
         else:
             self.register_neighbors(response_decoded['neighbors'])
+            self.register_parent(response_decoded['parent'])
 
     def close(self) -> None:
         self.socket.close()

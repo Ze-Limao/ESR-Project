@@ -31,7 +31,8 @@ class Bootstrap:
     def send_neighbors(self, ip: str) -> None:
         neighbors = [neighbor['name'] for neighbor in self.topology.get_neighbors(ip)]
         ips_neighbors = self.topology.get_ips_from_list_names(neighbors)
-        Messages_UDP.send(self.socket, Messages_UDP.encode_json({'neighbors': ips_neighbors}), ip, BOOTSTRAP_PORT)
+        parent = self.topology.get_parent(ip)
+        Messages_UDP.send(self.socket, Messages_UDP.encode_json({'neighbors': ips_neighbors, 'parent': parent}), ip, BOOTSTRAP_PORT)
         
     def send_interface(self, ip: str) -> None:
         interface = self.topology.get_primary_interface(ip)
@@ -45,6 +46,10 @@ class Bootstrap:
         for pop in POINTS_OF_PRESENCE:
             (distances, path) = self.topology.find_best_path(pop)
             print(f"Best path to {pop}: {path} with distance {distances}")
+
+    def build_tree(self) -> None:
+        self.topology.build_tree()
+        self.topology.display_tree()
 
     def receive_connections(self) -> None:
         try:
@@ -70,4 +75,5 @@ if __name__ == "__main__":
     bootstrap = Bootstrap(sys.argv[1])
     topology = bootstrap.get_topology()
     bootstrap.calculate_paths()
+    bootstrap.build_tree()
     bootstrap.receive_connections()

@@ -1,6 +1,6 @@
 from typing import TypedDict, List, Dict, Optional, Tuple
 import heapq
-from ...utils.config import SOURCE_NODE
+from ...utils.config import SOURCE_NODE, BOOTSTRAP_IP
 
 class Neighbors(TypedDict):
     name: str
@@ -17,6 +17,8 @@ class Topology:
         # Store computed paths and distances
         self.paths: Dict[str, List[str]] = {}
         self.distances: Dict[str, float] = {}
+        self.tree: Dict[str, List[str]] = {}
+        self.parent_map: Dict[str, str]= {}
         
     def add_nodes(self, nodes: Dict[str, Node]) -> None:
         self.topology = nodes
@@ -124,5 +126,37 @@ class Topology:
         # Store results in class
         self.paths[destination] = path
         self.distances[destination] = distances[destination]
-        
+
         return (distances[destination], path)
+    
+    def build_tree(self) -> None:
+        self.tree = {}
+        self.parent_map = {}
+        for _, path in self.paths.items():
+            # Set the server as the parent of the first node in the path
+            first_node = path[0]
+            self.parent_map[first_node] = BOOTSTRAP_IP
+            # Add the first node as a child of the server IP in the tree
+            if BOOTSTRAP_IP not in self.tree:
+                self.tree[BOOTSTRAP_IP] = []
+            if first_node not in self.tree[BOOTSTRAP_IP]:
+                self.tree[BOOTSTRAP_IP].append(first_node)
+
+            for i in range(1, len(path)):
+                parent = path[i - 1]
+                node = path[i]
+                # Set the parent of the current node
+                self.parent_map[node] = parent
+                # Initialize tree structure if not present
+                if parent not in self.tree:
+                    self.tree[parent] = []
+                # Add child to parent's list
+                if node not in self.tree[parent]:
+                    self.tree[parent].append(node)
+
+    def get_parent(self, node: str) -> str:
+        return self.parent_map[node]
+    
+    def display_tree(self) -> None:
+        for parent, children in self.tree.items():
+            print(f"{parent}: {children}")
