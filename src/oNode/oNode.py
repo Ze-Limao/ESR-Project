@@ -42,9 +42,6 @@ class oNode:
             self.register_neighbors(response_decoded['neighbors'])
             self.register_parent(response_decoded['parent'])
 
-    def close(self) -> None:
-        self.socket.close()
-
 if __name__ == "__main__":
     node = oNode()
     node.ask_neighbors()

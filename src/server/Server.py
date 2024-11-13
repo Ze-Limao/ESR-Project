@@ -1,25 +1,35 @@
 import sys, socket
-
+import threading
 from .ServerWorker import ServerWorker
+from ..utils.config import SERVER_PORT, POINTS_OF_PRESENCE, ONODE_PORT
+from ..utils.messages import Messages_UDP
 
 class Server:	
-	
-	def main(self):
-		try:
-			SERVER_PORT = int(sys.argv[1])
-		except:
-			print("[Usage: Server.py Server_port]\n")
-		rtspSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		rtspSocket.bind(('', SERVER_PORT))
-		rtspSocket.listen(5)        
+	def __init__(self):
+		self.socket_clients = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		self.socket_clients.bind(('', SERVER_PORT))
 
-		# Receive client info (address,port) through RTSP/TCP session
+		self.rtspSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.rtspSocket.bind(('', ONODE_PORT))
+		self.rtspSocket.listen(5) 
+
+	def accept_clients(self) -> None:
+		print("Server is listening on port", SERVER_PORT)
+
+		_, addr = self.socket_clients.recvfrom(1024)
+		print(f"Received connection from {addr}")
+		Messages_UDP.send(self.socket_clients, Messages_UDP.encode_json(POINTS_OF_PRESENCE), addr[0], addr[1])
+
+	def accept_streaming(self) -> None:
 		while True:
 			clientInfo = {}
-			clientInfo['rtspSocket'] = rtspSocket.accept()
-			ServerWorker(clientInfo).run()		
+			clientInfo['rtspSocket'] = self.rtspSocket.accept()
+			ServerWorker(clientInfo).run()
+
+	def main(self) -> None:
+		threading.Thread(target=self.accept_streaming).start()
+		while True:
+			self.accept_clients()
 
 if __name__ == "__main__":
 	(Server()).main()
-
-
