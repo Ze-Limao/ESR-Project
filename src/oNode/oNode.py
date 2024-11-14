@@ -1,15 +1,18 @@
 import socket
 import sys
 from ..utils.messages import Messages_UDP
-from ..utils.config import ONODE_PORT, BOOTSTRAP_IP, BOOTSTRAP_PORT
+from ..utils.config import ONODE_PORT, BOOTSTRAP_IP, BOOTSTRAP_PORT, STREAM_PORT
 
 class oNode:
     def __init__(self):
         self.socket_bootstrap = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket_bootstrap.bind(('', BOOTSTRAP_PORT))
         
-        self.socket_onodes = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket_onodes.bind(('', ONODE_PORT))
+        self.socket_monitoring = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket_monitoring.bind(('', ONODE_PORT))
+
+        self.socket_streaming = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket_streaming.bind(('', STREAM_PORT))
 
         self.neighbors = []
         self.parent = None
@@ -42,6 +45,13 @@ class oNode:
             self.register_neighbors(response_decoded['neighbors'])
             self.register_parent(response_decoded['parent'])
 
+    def recieve_monitoring_messages(self) -> None:
+        while True:
+            _, addr = self.socket_monitoring.recvfrom(1024)
+            print(f"Received monitoring message from {addr}")
+            Messages_UDP.send(self.socket_monitoring, b'', addr[0], addr[1])
+
 if __name__ == "__main__":
     node = oNode()
     node.ask_neighbors()
+    node.recieve_monitoring_messages()
