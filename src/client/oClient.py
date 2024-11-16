@@ -18,6 +18,12 @@ class oClient:
 		self.points_of_presence = SafeMap()
 		self.point_of_presence = SafeString()
 
+	def ask_for_streaming(self) -> None:
+		data = Messages_UDP.send_and_receive(self.socket, Messages_UDP.encode(self.fileName), self.point_of_presence.read(), ONODE_PORT)
+		if data is None:
+			print("Error: Could not get response from point of presence")
+			sys.exit(1)
+
 	def create_client(self) -> None:
 		ClientStream(self.root, self.fileName)
 		self.root.mainloop()
@@ -29,7 +35,6 @@ class oClient:
 			sys.exit(1)
 		points_of_presence = Messages_UDP.decode_json(points_of_presence_enconded)
 		self.set_points_presence(points_of_presence)
-		print(self.points_of_presence)
 		
 	def set_points_presence(self, points_of_presence: list):
 		for point in points_of_presence:
@@ -52,12 +57,27 @@ class oClient:
 				if self.points_of_presence.get(current_point) > delay:
 					self.point_of_presence.write(point)
 
-	def check_status_points_presence(self) -> None:
+	def first_check_status_points_presence(self) -> None:
+		threads = []
 		for point in self.points_of_presence.get_keys():
-			threading.Thread(target=self.check_status_point_of_presence, args=(point,)).start()
-		print(self.points_of_presence.get_items())
-		print(self.point_of_presence.read())
+			threads.append(threading.Thread(target=self.check_status_point_of_presence, args=(point,)))
+		
+		for thread in threads:
+			thread.start()
+		
+		for thread in threads:
+			thread.join()
 
+		if self.point_of_presence.read() == None:
+			print("Error: Could not find a point of presence")
+			sys.exit(1)
+
+	def check_status_points_presence(self) -> None:
+		while True:
+			time.sleep(5)
+			for point in self.points_of_presence.get_keys():
+				threading.Thread(target=self.check_status_point_of_presence, args=(point,)).start()
+			
 if __name__ == "__main__":
 	try:
 		fileName = sys.argv[1]
@@ -66,5 +86,7 @@ if __name__ == "__main__":
 
 	oclient = oClient(fileName)
 	oclient.ask_points_presence()
+	oclient.first_check_status_points_presence()
+	oclient.ask_for_streaming()
 	oclient.check_status_points_presence()
 	oclient.create_client()

@@ -1,7 +1,8 @@
 import socket
 import sys
+from ..utils.safemap import SafeMap
 from ..utils.messages import Messages_UDP
-from ..utils.config import ONODE_PORT, BOOTSTRAP_IP, BOOTSTRAP_PORT, STREAM_PORT
+from ..utils.config import ONODE_PORT, BOOTSTRAP_IP, BOOTSTRAP_PORT, STREAM_PORT, VIDEO_FILES
 
 class oNode:
     def __init__(self):
@@ -16,6 +17,12 @@ class oNode:
 
         self.neighbors = []
         self.parent = None
+
+        temp_dict = {}
+        for video in VIDEO_FILES:
+            temp_dict[video] = (False, [])
+
+        self.streams = SafeMap(temp_dict)
 
     def register_neighbors(self, neighbors: list):
         self.neighbors = neighbors

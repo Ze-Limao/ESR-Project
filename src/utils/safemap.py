@@ -2,9 +2,9 @@ import threading
 
 # SafeMap: class that implements a thread-safe map. Implements most of the methods of a dict with a lock
 class SafeMap:
-    def __init__(self):
+    def __init__(self, map={}):
         self.lock = threading.Lock()
-        self.map = {}
+        self.map = map
 
     def __str__(self):
         with self.lock:
