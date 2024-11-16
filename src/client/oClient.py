@@ -1,15 +1,12 @@
-import sys
+import sys, threading, time, socket
 from tkinter import Tk
-from .Client import Client
+from .ClientStream import ClientStream
 from ..utils.messages import Messages_UDP
 from ..utils.config import ONODE_PORT, STREAM_PORT, RTP_PORT, SERVER_IP
 from ..utils.safemap import SafeMap
 from ..utils.safestring import SafeString
-import socket
-import time
-import threading
 
-class ClientLauncher:
+class oClient:
 	def __init__(self, fileName: str):
 		self.serverAddr: str = SERVER_IP
 		self.serverPort: int = STREAM_PORT
@@ -22,8 +19,7 @@ class ClientLauncher:
 		self.point_of_presence = SafeString()
 
 	def create_client(self) -> None:
-		app = Client(self.root, self.serverAddr, self.serverPort, self.rtpPort, self.fileName)
-		app.master.title("RTPClient")	
+		ClientStream(self.root, self.fileName)
 		self.root.mainloop()
 		
 	def ask_points_presence(self) -> None:
@@ -61,13 +57,14 @@ class ClientLauncher:
 			threading.Thread(target=self.check_status_point_of_presence, args=(point,)).start()
 		print(self.points_of_presence.get_items())
 		print(self.point_of_presence.read())
+
 if __name__ == "__main__":
 	try:
 		fileName = sys.argv[1]
 	except:
 		print("[Usage: ClientLauncher.py Video_file]\n")
 
-	client_launcher = ClientLauncher(fileName)
-	client_launcher.ask_points_presence()
-	client_launcher.check_status_points_presence()
-	client_launcher.create_client()
+	oclient = oClient(fileName)
+	oclient.ask_points_presence()
+	oclient.check_status_points_presence()
+	oclient.create_client()
