@@ -5,12 +5,15 @@ from ..utils.stream.VideoStream import VideoStream
 from ..utils.stream.RtpPacket import RtpPacket
 
 class ServerStream:
-    def __init__(self, oNodeIp: str= "10.0.0.21", videoPath: str= "videos/video_BrskEdu.mp4"):
+    def __init__(self, oNodeIp: str= None, videoPath: str= "videos/video_BrskEdu.mp4"):
         self.oNodeIp: str = oNodeIp
         self.rtp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.rtp_socket.bind(('', STREAM_PORT))
 
         self.videoStream = VideoStream(videoPath)
+
+    def set_oNodeIp(self, oNodeIp: str) -> None:
+        self.oNodeIp = oNodeIp
 
     def send_streaming(self) -> None:
         while True:

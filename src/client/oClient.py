@@ -6,7 +6,7 @@ from ..utils.config import ONODE_PORT, STREAM_PORT, RTP_PORT, SERVER_IP
 from ..utils.safemap import SafeMap
 from ..utils.safestring import SafeString
 
-class ClientLauncher:
+class oClient:
 	def __init__(self, fileName: str):
 		self.serverAddr: str = SERVER_IP
 		self.serverPort: int = STREAM_PORT
@@ -64,7 +64,7 @@ if __name__ == "__main__":
 	except:
 		print("[Usage: ClientLauncher.py Video_file]\n")
 
-	client_launcher = ClientLauncher(fileName)
-	client_launcher.ask_points_presence()
-	client_launcher.check_status_points_presence()
-	client_launcher.create_client()
+	oclient = oClient(fileName)
+	oclient.ask_points_presence()
+	oclient.check_status_points_presence()
+	oclient.create_client()
