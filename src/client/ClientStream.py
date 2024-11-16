@@ -1,9 +1,9 @@
 import socket, threading
 from tkinter import *
-from tkinter import messagebox
 from PIL import Image, ImageTk
 from ..utils.config import STREAM_PORT, RTP_PORT, SERVER_IP
 from ..utils.stream.RtpPacket import RtpPacket
+import time
 
 CACHE_FILE_NAME = "cache-"
 CACHE_FILE_EXT = ".jpg"
@@ -18,6 +18,7 @@ class ClientStream:
         self.master: Tk = master
         self.master.title("RTPClient")
         self.frameNbr = 0
+        self.timestamp= str(int(time.time() * 1000))
         
         self.rtpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.rtpsocket.bind(('', self.serverPort))
@@ -67,7 +68,7 @@ class ClientStream:
 
     def writeFrame(self, data):
         """Write the received frame to a temp image file. Return the image file."""
-        cachename = CACHE_FILE_NAME + str(self.sessionId) + CACHE_FILE_EXT
+        cachename = CACHE_FILE_NAME + self.timestamp + CACHE_FILE_EXT
         file = open(cachename, "wb")
         file.write(data)
         file.close()

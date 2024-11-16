@@ -57,6 +57,7 @@ class ClientLauncher:
 			threading.Thread(target=self.check_status_point_of_presence, args=(point,)).start()
 		print(self.points_of_presence.get_items())
 		print(self.point_of_presence.read())
+
 if __name__ == "__main__":
 	try:
 		fileName = sys.argv[1]
