@@ -2,7 +2,7 @@ import socket, sys, threading
 from typing import TypedDict, Dict
 from ..utils.safemap import SafeMap
 from ..utils.messages import Messages_UDP
-from ..utils.config import ONODE_PORT, BOOTSTRAP_IP, BOOTSTRAP_PORT, STREAM_PORT, VIDEO_FILES
+from ..utils.config import ONODE_PORT, BOOTSTRAP_IP, BOOTSTRAP_PORT, VIDEO_FILES
 
 class stream_information(TypedDict):
     is_streaming: bool

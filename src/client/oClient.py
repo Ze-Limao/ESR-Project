@@ -2,19 +2,24 @@ import sys, threading, time, socket
 from tkinter import Tk
 from .ClientStream import ClientStream
 from ..utils.messages import Messages_UDP
-from ..utils.config import ONODE_PORT, STREAM_PORT, RTP_PORT, SERVER_IP
+from ..utils.config import ONODE_PORT, RTP_PORT, SERVER_IP, OCLIENT_PORT
 from ..utils.safemap import SafeMap
 from ..utils.safestring import SafeString
 
 class oClient:
 	def __init__(self, fileName: str):
 		self.serverAddr: str = SERVER_IP
-		self.serverPort: int = STREAM_PORT
 		self.rtpPort: int = RTP_PORT
 		self.fileName: str = fileName
 		self.root = Tk()
+		# SOCKET TO ASK FOR STREAMING
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
 		self.socket.bind(('', ONODE_PORT))
+
+		# SOCKET TO ASK SERVER FOR POINTS OF PRESENCE
+		self.socket_oClient = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		self.socket_oClient.bind(('', OCLIENT_PORT))
+
 		self.points_of_presence = SafeMap()
 		self.point_of_presence = SafeString()
 
@@ -29,12 +34,13 @@ class oClient:
 		self.root.mainloop()
 		
 	def ask_points_presence(self) -> None:
-		points_of_presence_enconded = Messages_UDP.send_and_receive(self.socket, b'' ,self.serverAddr, ONODE_PORT)
+		points_of_presence_enconded = Messages_UDP.send_and_receive(self.socket_oClient, b'' ,self.serverAddr, OCLIENT_PORT)
 		if points_of_presence_enconded is None:
 			print("Error: Could not get points of presence")
 			sys.exit(1)
 		points_of_presence = Messages_UDP.decode_json(points_of_presence_enconded)
 		self.set_points_presence(points_of_presence)
+		self.socket_oClient.close()
 		
 	def set_points_presence(self, points_of_presence: list):
 		for point in points_of_presence:
@@ -88,5 +94,5 @@ if __name__ == "__main__":
 	oclient.ask_points_presence()
 	oclient.first_check_status_points_presence()
 	oclient.ask_for_streaming()
-	oclient.check_status_points_presence()
+	threading.Thread(target=oclient.check_status_points_presence).start()
 	oclient.create_client()

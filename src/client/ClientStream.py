@@ -1,7 +1,7 @@
 import socket, threading
 from tkinter import *
 from PIL import Image, ImageTk
-from ..utils.config import STREAM_PORT, RTP_PORT, SERVER_IP
+from ..utils.config import RTP_PORT, SERVER_IP, VIDEO_FILES
 from ..utils.stream.RtpPacket import RtpPacket
 import time
 
@@ -12,7 +12,7 @@ CACHE_FILE_EXT = ".jpg"
 class ClientStream:
     def __init__(self, master: Tk, fileName: str):
         self.serverAddr: str = SERVER_IP
-        self.serverPort: int = STREAM_PORT
+        self.serverPort: int = VIDEO_FILES[fileName]
         self.rtpPort: int = RTP_PORT
         self.fileName: str = fileName
         self.master: Tk = master
@@ -62,8 +62,11 @@ class ClientStream:
                     self.updateMovie(self.writeFrame(rtpPacket.getPayload()))
     
     def updateMovie(self, imageFile):
-        photo = ImageTk.PhotoImage(Image.open(imageFile))
-        self.label.configure(image = photo, height=288) 
+        image = Image.open(imageFile)
+        photo = ImageTk.PhotoImage(image)
+        
+        # Dynamically set the label size to match the image
+        self.label.configure(image=photo, height=image.size[1], width=image.size[0]) 
         self.label.image = photo
 
     def writeFrame(self, data):

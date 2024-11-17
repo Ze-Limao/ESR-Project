@@ -1,19 +1,20 @@
 import socket
 import time
-from ..utils.config import STREAM_PORT
 from ..utils.stream.VideoStream import VideoStream
 from ..utils.stream.RtpPacket import RtpPacket
+from ..utils.safestring import SafeString
 
 class ServerStream:
-    def __init__(self, oNodeIp: str= None, videoPath: str= "videos/video_BrskEdu.mp4"):
-        self.oNodeIp: str = oNodeIp
+    def __init__(self, videoPath: str, streamPort: int):
+        self.oNodeIp: SafeString = SafeString()
         self.rtp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.rtp_socket.bind(('', STREAM_PORT))
+        self.rtp_socket.bind(('', streamPort))
+        self.streamPort = streamPort
 
         self.videoStream = VideoStream(videoPath)
 
     def set_oNodeIp(self, oNodeIp: str) -> None:
-        self.oNodeIp = oNodeIp
+        self.oNodeIp.write(oNodeIp)
 
     def send_streaming(self) -> None:
         while True:
@@ -21,9 +22,11 @@ class ServerStream:
             if data:
                 frameNumber = self.videoStream.frameNbr()
                 try:
-                    self.rtp_socket.sendto(self.makeRtp(data, frameNumber), (self.oNodeIp, STREAM_PORT))
+                    print(f"Sending frame {frameNumber}")
+                    print(f"Ip: {self.oNodeIp.read()}")
+                    self.rtp_socket.sendto(self.makeRtp(data, frameNumber), (self.oNodeIp.read(), self.streamPort))
                 except:
-                    print("Connection Error")
+                    pass
             time.sleep(0.05)
     
     def makeRtp(self, payload, frameNbr):
