@@ -1,4 +1,4 @@
-import socket, threading
+import socket, threading, sys
 from .ServerStream import ServerStream
 from ..utils.config import POINTS_OF_PRESENCE, ONODE_PORT, VIDEO_FILES, OCLIENT_PORT
 from ..utils.messages import Messages_UDP
@@ -42,4 +42,7 @@ class Server:
 		threading.Thread(target=self.receive_resquest_streaming).start()
 
 if __name__ == "__main__":
+	if len(sys.argv) != 1:
+		print("python3 -m src.server.Server")
+		sys.exit(1)
 	(Server()).main()

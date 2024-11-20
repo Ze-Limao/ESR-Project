@@ -99,7 +99,26 @@ class oNode:
                 print(f"Video: {video}")
                 self.process_ask_for_stream(video, addr[0])
 
+
+def ctrlc_handler(sig, frame):
+    print("Closing the server and the threads...")
+    # fechar as cenas que tens a fechar
+    sys.exit(0)
+
+def ctrl_slash_handler(sig, frame):
+    print("Simulating a sudden server shutdown...")
+    sys.exit(0)
+
 if __name__ == "__main__":
+    if len(sys.argv) != 1:
+        print("python3 -m src.oNode.oNode")
+        sys.exit(1)
+
+    # Register the signal to shut down the server at the time of CTRL+C
+    signal.signal(signal.SIGINT, partial(ctrlc_handler, db))
+    # Register the signal to simulate the sudden shutdown of the server at the time of CTRL+\
+    signal.signal(signal.SIGQUIT, ctrl_slash_handler)
+
     node = oNode()
     node.ask_neighbors()
     node.recieve_monitoring_messages()
