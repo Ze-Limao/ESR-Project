@@ -106,7 +106,7 @@ def ctrlc_handler(sig, frame):
     sys.exit(0)
 
 def ctrl_slash_handler(sig, frame):
-    print("Simulating a sudden server shutdown...")
+    print("Simulating a sudden oNode shutdown...")
     sys.exit(0)
 
 if __name__ == "__main__":
