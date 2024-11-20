@@ -1,4 +1,4 @@
-import sys, threading, time, socket
+import sys, threading, time, socket, signal
 from tkinter import Tk
 from .ClientStream import ClientStream
 from ..utils.messages import Messages_UDP
@@ -23,6 +23,9 @@ class oClient:
 		self.points_of_presence = SafeMap()
 		self.point_of_presence = SafeString()
 
+		self.threads = []
+		self.stop_event = threading.Event()
+
 	def ask_for_streaming(self) -> None:
 		data = Messages_UDP.send_and_receive(self.socket, Messages_UDP.encode(self.fileName), self.point_of_presence.read(), ONODE_PORT)
 		if data is None:
@@ -46,7 +49,7 @@ class oClient:
 		for point in points_of_presence:
 			self.points_of_presence.put(point, float('inf'))
 
-	def check_status_point_of_presence(self, point: str) -> None:
+	def update_point_of_presence_status(self, point: str) -> None:
 		timestamp = time.time()
 		response = Messages_UDP.send_and_receive(self.socket, b'', point, ONODE_PORT)
 		if response is None:
@@ -66,7 +69,7 @@ class oClient:
 	def first_check_status_points_presence(self) -> None:
 		threads = []
 		for point in self.points_of_presence.get_keys():
-			threads.append(threading.Thread(target=self.check_status_point_of_presence, args=(point,)))
+			threads.append(threading.Thread(target=self.update_point_of_presence_status, args=(point,)))
 		
 		for thread in threads:
 			thread.start()
@@ -78,21 +81,43 @@ class oClient:
 			print("Error: Could not find a point of presence")
 			sys.exit(1)
 
-	def check_status_points_presence(self) -> None:
-		while True:
+	def start_thread(self, point: str) -> None:
+		while not self.stop_event.is_set():
+			self.update_point_of_presence_status(point)
 			time.sleep(5)
-			for point in self.points_of_presence.get_keys():
-				threading.Thread(target=self.check_status_point_of_presence, args=(point,)).start()
-			
+
+	def check_status_points_presence(self) -> None:
+		for point in self.points_of_presence.get_keys():
+			thread = threading.Thread(target=self.start_thread, args=(point,))
+			thread.start()
+			self.threads.append(thread)
+
+	def closeStreaming(self) -> None:
+		# Close sockets
+		self.socket.close()
+		self.socket_oClient.close()
+		# Close Threads
+		self.stop_event.set()
+		for thread in self.threads:
+			thread.join()
+
+def ctrlc_handler(sig, frame):
+    print("Closing the server and the threads...")
+    oclient.closeStreaming()
+    sys.exit(0)
+	
 if __name__ == "__main__":
 	try:
 		fileName = sys.argv[1]
 	except:
 		print("[Usage: python3 -m src.client.oClient <video_file_path>]\n")
 
+	# Register the signal to shut down the server at the time of CTRL+C
+	signal.signal(signal.SIGINT, ctrlc_handler)
+
 	oclient = oClient(fileName)
 	oclient.ask_points_presence()
 	oclient.first_check_status_points_presence()
 	oclient.ask_for_streaming()
-	threading.Thread(target=oclient.check_status_points_presence).start()
+	oclient.check_status_points_presence()
 	oclient.create_client()

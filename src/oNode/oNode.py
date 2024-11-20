@@ -1,4 +1,4 @@
-import socket, sys, threading
+import socket, sys, threading, signal
 from typing import TypedDict, Dict
 from ..utils.safemap import SafeMap
 from ..utils.messages import Messages_UDP
@@ -31,6 +31,8 @@ class oNode:
             }
         self.streams = SafeMap(temp_dict)
 
+        self.stop_event = threading.Event()
+
     def register_neighbors(self, neighbors: list):
         self.neighbors = neighbors
         print(f"Neighbors: {self.neighbors}")
@@ -60,7 +62,7 @@ class oNode:
             self.register_parent(response_decoded['parent'])
 
     def foward_stream(self, rtpsocket: socket.socket, video: str) -> None:
-        while True:
+        while not self.stop_event.is_set():
             data, addr = rtpsocket.recvfrom(20480)
             print(f"Received stream from {addr}")
             stream: stream_information = self.streams.get(video)
@@ -89,7 +91,7 @@ class oNode:
                 stream["clients"].add(addr)
                 self.streams.put(video, stream)
 
-    def recieve_monitoring_messages(self) -> None:
+    def receive_monitoring_messages(self) -> None:
         while True:
             data, addr = self.socket_monitoring.recvfrom(1024)
             print(f"Received monitoring message from {addr}")
@@ -99,10 +101,23 @@ class oNode:
                 print(f"Video: {video}")
                 self.process_ask_for_stream(video, addr[0])
 
+    def closeStreaming (self) -> None:
+        # Close sockets
+        self.socket_bootstrap.close()
+        self.socket_monitoring.close()
+        # Close Threads
+        values_streams : stream_information = self.streams.get_values()
+        self.stop_event.set()
+        for stream in values_streams:
+            stream["is_streaming"] = False
+            if stream["thread"] is not None:
+                stream["thread"].join()
+                stream["thread"] = None
+
 
 def ctrlc_handler(sig, frame):
     print("Closing the server and the threads...")
-    # fechar as cenas que tens a fechar
+    node.closeStreaming()
     sys.exit(0)
 
 def ctrl_slash_handler(sig, frame):
@@ -115,10 +130,10 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Register the signal to shut down the server at the time of CTRL+C
-    signal.signal(signal.SIGINT, partial(ctrlc_handler, db))
+    signal.signal(signal.SIGINT, ctrlc_handler)
     # Register the signal to simulate the sudden shutdown of the server at the time of CTRL+\
     signal.signal(signal.SIGQUIT, ctrl_slash_handler)
 
     node = oNode()
     node.ask_neighbors()
-    node.recieve_monitoring_messages()
+    node.receive_monitoring_messages()
