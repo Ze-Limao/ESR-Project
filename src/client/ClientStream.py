@@ -49,7 +49,7 @@ class ClientStream:
     
     def receiveRtp(self):
         while True:
-            data = self.rtpsocket.recv(20480)
+            data = self.rtpsocket.recv(40480)
             if data:
                 rtpPacket = RtpPacket()
                 rtpPacket.decode(data)

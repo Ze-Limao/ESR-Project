@@ -61,7 +61,7 @@ class oNode:
 
     def foward_stream(self, rtpsocket: socket.socket, video: str) -> None:
         while True:
-            data, addr = rtpsocket.recvfrom(20480)
+            data, addr = rtpsocket.recvfrom(40480)
             print(f"Received stream from {addr}")
             stream: stream_information = self.streams.get(video)
             for client in stream["clients"]:
