@@ -23,6 +23,9 @@ class ClientStream:
         self.rtpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.rtpsocket.bind(('', self.serverPort))
 
+        self.event = threading.Event()
+        self.thread = threading.Thread(target=self.receiveRtp)
+
         self.createWidgets()
     
     def createWidgets(self):
@@ -41,14 +44,16 @@ class ClientStream:
         self.label.grid(row=0, column=0, columnspan=2, sticky=W+E+N+S, padx=5, pady=5)
 
     def playStream(self):
-        threading.Thread(target=self.receiveRtp).start()
+        self.thread.start()
 
     def closeStream(self):
         self.master.destroy()
         self.rtpsocket.close()
+        self.event.set()
+        self.thread.join()
     
     def receiveRtp(self):
-        while True:
+        while not self.event.is_set():
             data = self.rtpsocket.recv(20480)
             if data:
                 rtpPacket = RtpPacket()

@@ -5,6 +5,7 @@ from ..utils.messages import Messages_UDP
 from ..utils.config import ONODE_PORT, RTP_PORT, SERVER_IP, OCLIENT_PORT
 from ..utils.safemap import SafeMap
 from ..utils.safestring import SafeString
+from typing import List
 
 class oClient:
 	def __init__(self, fileName: str):
@@ -23,7 +24,7 @@ class oClient:
 		self.points_of_presence = SafeMap()
 		self.point_of_presence = SafeString()
 
-		self.threads = []
+		self.threads : List[threading.Thread] = []
 		self.stop_event = threading.Event()
 
 	def ask_for_streaming(self) -> None:
@@ -93,18 +94,18 @@ class oClient:
 			self.threads.append(thread)
 
 	def closeStreaming(self) -> None:
-		# Close sockets
-		self.socket.close()
-		self.socket_oClient.close()
 		# Close Threads
 		self.stop_event.set()
 		for thread in self.threads:
 			thread.join()
+		
+		# Close sockets
+		self.socket.close()
+		self.socket_oClient.close()
 
 def ctrlc_handler(sig, frame):
     print("Closing the server and the threads...")
     oclient.closeStreaming()
-    sys.exit(0)
 	
 if __name__ == "__main__":
 	try:
