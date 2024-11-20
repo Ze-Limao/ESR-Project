@@ -88,7 +88,7 @@ if __name__ == "__main__":
 	try:
 		fileName = sys.argv[1]
 	except:
-		print("[Usage: src.client.oClient <video_file_path>]\n")
+		print("[Usage: python3 -m src.client.oClient <video_file_path>]\n")
 
 	oclient = oClient(fileName)
 	oclient.ask_points_presence()
