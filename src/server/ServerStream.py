@@ -1,4 +1,4 @@
-import socket
+import socket, threading
 import time
 from ..utils.stream.VideoStream import VideoStream
 from ..utils.stream.RtpPacket import RtpPacket
@@ -12,12 +12,13 @@ class ServerStream:
         self.streamPort = streamPort
 
         self.videoStream = VideoStream(videoPath)
+        self.stop_event = threading.Event()
 
     def set_oNodeIp(self, oNodeIp: str) -> None:
         self.oNodeIp.write(oNodeIp)
 
     def send_streaming(self) -> None:
-        while True:
+        while not self.stop_event.is_set():
             data = self.videoStream.nextFrame()
             if data:
                 frameNumber = self.videoStream.frameNbr()
@@ -45,3 +46,7 @@ class ServerStream:
         rtpPacket.encode(version, padding, extension, cc, seqnum, marker, pt, ssrc, payload)
         
         return rtpPacket.getPacket()
+
+    def close(self) -> None:
+        self.stop_event.set()
+        self.rtp_socket.close()
