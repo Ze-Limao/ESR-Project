@@ -31,6 +31,7 @@ class oNode:
             }
         self.streams = SafeMap(temp_dict)
 
+        self.thread_monitoring = threading.Thread(target=self.receive_monitoring_messages)
         self.stop_event = threading.Event()
 
     def register_neighbors(self, neighbors: list):
@@ -62,12 +63,20 @@ class oNode:
             self.register_parent(response_decoded['parent'])
 
     def foward_stream(self, rtpsocket: socket.socket, video: str) -> None:
+        rtpsocket.settimeout(1)  # Set a 1-second timeout
         while not self.stop_event.is_set():
-            data, addr = rtpsocket.recvfrom(20480)
-            print(f"Received stream from {addr}")
-            stream: stream_information = self.streams.get(video)
-            for client in stream["clients"]:
-                Messages_UDP.send(rtpsocket, data, client, stream["port"])
+            try:
+                data, addr = rtpsocket.recvfrom(20480)
+                print(f"Received stream from {addr}")
+                stream: stream_information = self.streams.get(video)
+                for client in stream["clients"]:
+                    Messages_UDP.send(rtpsocket, data, client, stream["port"])
+            except socket.timeout:
+                # Timeout occurred, loop back and check stop_event
+                continue
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                break
 
     def process_ask_for_stream(self, video: str, addr: str) -> None:
         stream: stream_information = self.streams.get(video)
@@ -92,19 +101,24 @@ class oNode:
                 self.streams.put(video, stream)
 
     def receive_monitoring_messages(self) -> None:
-        while True:
-            data, addr = self.socket_monitoring.recvfrom(1024)
-            print(f"Received monitoring message from {addr}")
-            Messages_UDP.send(self.socket_monitoring, b'', addr[0], addr[1])
-            if data != b'':
-                video = Messages_UDP.decode(data)
-                print(f"Video: {video}")
-                self.process_ask_for_stream(video, addr[0])
+        self.socket_monitoring.settimeout(1)  # Set a 1-second timeout
+        while not self.stop_event.is_set():
+            try:
+                data, addr = self.socket_monitoring.recvfrom(1024)
+                print(f"Received monitoring message from {addr}")
+                Messages_UDP.send(self.socket_monitoring, b'', addr[0], addr[1])
+                if data != b'':
+                    video = Messages_UDP.decode(data)
+                    print(f"Video: {video}")
+                    self.process_ask_for_stream(video, addr[0])
+            except socket.timeout:
+                # Timeout occurred, loop back and check stop_event
+                continue
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                break
 
     def closeStreaming (self) -> None:
-        # Close sockets
-        self.socket_bootstrap.close()
-        self.socket_monitoring.close()
         # Close Threads
         values_streams : stream_information = self.streams.get_values()
         self.stop_event.set()
@@ -114,11 +128,14 @@ class oNode:
                 stream["thread"].join()
                 stream["thread"] = None
 
+        self.thread_monitoring.join()
+        # Close sockets
+        self.socket_bootstrap.close()
+        self.socket_monitoring.close()
 
 def ctrlc_handler(sig, frame):
     print("Closing the server and the threads...")
     node.closeStreaming()
-    sys.exit(0)
 
 def ctrl_slash_handler(sig, frame):
     print("Simulating a sudden oNode shutdown...")
@@ -136,4 +153,4 @@ if __name__ == "__main__":
 
     node = oNode()
     node.ask_neighbors()
-    node.receive_monitoring_messages()
+    node.thread_monitoring.start()
