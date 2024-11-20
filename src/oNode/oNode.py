@@ -66,7 +66,7 @@ class oNode:
         rtpsocket.settimeout(1)  # Set a 1-second timeout
         while not self.stop_event.is_set():
             try:
-                data, addr = rtpsocket.recvfrom(20480)
+                data, addr = rtpsocket.recvfrom(40480)
                 print(f"Received stream from {addr}")
                 stream: stream_information = self.streams.get(video)
                 for client in stream["clients"]:
