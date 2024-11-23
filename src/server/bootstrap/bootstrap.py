@@ -1,6 +1,4 @@
-import sys
-import socket
-import threading
+import sys, socket, threading
 from ...utils.filereader import FileReader
 from ...utils.messages import Messages_UDP
 from ...utils.config import BOOTSTRAP_PORT, POINTS_OF_PRESENCE

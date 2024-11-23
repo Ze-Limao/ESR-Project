@@ -127,7 +127,7 @@ class oNode:
         while not self.stop_event.is_set():
             for neighbour in self.neighbors:
                 timestamp = time.time()
-                data = Messages_UDP.send(self.socket_self_monitoring, b'', neighbour, ONODE_PORT)
+                data = Messages_UDP.send_and_receive(self.socket_self_monitoring, b'', neighbour, ONODE_PORT)
                 if data == None:
                     times[neighbour] = float('inf')
                 else:
