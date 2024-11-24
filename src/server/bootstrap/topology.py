@@ -21,7 +21,18 @@ class Topology:
         self.parent_map: Dict[str, str]= {}
         
     def add_nodes(self, nodes: Dict[str, Node]) -> None:
-        self.topology = nodes
+        for node, data in nodes.items():
+            self.topology[node] = {
+                'name': data['name'],
+                'possible_interfaces': data['possible_interfaces'],
+                'neighbors': []
+            }
+            for neighbor in data['neighbors']:
+                if neighbor['velocity'] == "inf":
+                    neighbor['velocity'] = float('inf')
+                else:
+                    neighbor['velocity'] = float(neighbor['velocity'])
+                self.topology[node]['neighbors'].append(neighbor)
 
     def get_vertices(self) -> List[str]:
         return list(self.topology.keys())
@@ -104,7 +115,7 @@ class Topology:
                     continue
                     
                 # Use velocity as weight (higher velocity = lower weight)
-                weight = 1 / neighbor['velocity'] if neighbor['velocity'] > 0 else inf
+                weight = 1 / neighbor['velocity'] if neighbor['velocity'] != inf else inf
                 new_distance = distances[current_node] + weight
                 
                 if new_distance < distances[neighbor_ip]:
@@ -155,8 +166,15 @@ class Topology:
                     self.tree[parent].append(node)
 
     def get_parent(self, node: str) -> str:
-        return self.parent_map[node]
+        return self.parent_map[node] if node in self.parent_map else None
     
     def display_tree(self) -> None:
         for parent, children in self.tree.items():
             print(f"{parent}: {children}")
+
+    def update_velocity(self, node: str, velocity: float, ip: str) -> None:
+        for neighbour in self.topology[ip]['neighbors']:
+            if neighbour['name'] == self.get_name_by_ip(node):
+                neighbour['velocity'] = velocity
+                break
+        self.display()

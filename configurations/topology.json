@@ -8,19 +8,19 @@
         "neighbors": [
             {
                 "name": "n4",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n19",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n24",
-                "velocity": 1
+                "velocity": "inf"
             }
         ]
     },
@@ -35,23 +35,23 @@
         "neighbors": [
             {
                 "name": "n6",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n3",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n19",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n21",
-                "velocity": 1
+                "velocity": "inf"
             }
         ]
     },
@@ -66,19 +66,19 @@
         "neighbors": [
             {
                 "name": "n4",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n3",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n7",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n8",
-                "velocity": 1
+                "velocity": "inf"
             }
         ]
     },
@@ -91,15 +91,15 @@
         "neighbors": [
             {
                 "name": "n4",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n3",
-                "velocity": 1
+                "velocity": "inf"
             }
         ]
     },
@@ -112,15 +112,15 @@
         "neighbors": [
             {
                 "name": "n6",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n3",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n10",
-                "velocity": 1
+                "velocity": "inf"
             }
         ]
     },
@@ -136,31 +136,31 @@
         "neighbors": [
             {
                 "name": "n6",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n4",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n19",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n7",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n10",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n21",
-                "velocity": 1
+                "velocity": "inf"
             }
         ]
     },
@@ -174,23 +174,23 @@
         "neighbors": [
             {
                 "name": "n2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n3",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n6",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n21",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n24",
-                "velocity": 1
+                "velocity": "inf"
             }
         ]
     },
@@ -204,15 +204,15 @@
         "neighbors": [
             {
                 "name": "n19",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n3",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n21",
-                "velocity": 1
+                "velocity": "inf"
             }
        ]
     },
@@ -227,19 +227,19 @@
         "neighbors": [
             {
                 "name": "n10",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n3",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n7",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n24",
-                "velocity": 1
+                "velocity": "inf"
            }
        ]
     },
@@ -253,15 +253,15 @@
         "neighbors": [
             {
                 "name": "n10",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n21",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n8",
-                "velocity": 1
+                "velocity": "inf"
             }
         ]
     },
@@ -273,11 +273,11 @@
         "neighbors": [
             {
                 "name": "n24",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "name": "n7",
-                "velocity": 1
+                "velocity": "inf"
             }
        ]
     }

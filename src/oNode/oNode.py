@@ -133,7 +133,7 @@ class oNode:
                 else:
                     times[neighbour] = time.time() - timestamp
             print(times)
-            # TODO: Inform the bootstrap server about the times
+            Messages_UDP.send(self.socket_bootstrap, Messages_UDP.encode_json(times), BOOTSTRAP_IP, BOOTSTRAP_PORT)
             time.sleep(1)
 
     def closeStreaming (self) -> None:

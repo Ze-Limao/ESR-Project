@@ -3,6 +3,7 @@ from ...utils.filereader import FileReader
 from ...utils.messages import Messages_UDP
 from ...utils.config import BOOTSTRAP_PORT, POINTS_OF_PRESENCE
 from .topology import Topology
+from typing import Dict, Tuple
 
 class Bootstrap:
     def __init__(self, file_path: str):
@@ -42,27 +43,39 @@ class Bootstrap:
 
     def calculate_paths(self) -> None:
         for pop in POINTS_OF_PRESENCE:
-            (distances, path) = self.topology.find_best_path(pop)
-            print(f"Best path to {pop}: {path} with distance {distances}")
+            path = self.topology.find_best_path(pop)
+            if path != None:
+                distances, path = path
+                print(f"Best path to {pop}: {path} with distance {distances}")
+            else:
+                print(f"Could not find a path to {pop}")
 
     def build_tree(self) -> None:
         self.topology.build_tree()
         self.topology.display_tree()
+    
+    def update_topology(self, data: Dict, addr: Tuple[str, int]) -> None:
+        for node, time in data.items():
+            self.topology.update_velocity(node, time, addr[0])
 
     def receive_connections(self) -> None:
         try:
             while True:
-                _, addr = self.socket.recvfrom(1024)
-                if self.topology.correct_interface(addr[0]):
-                    thread = threading.Thread(target=self.send_neighbors, args=(addr[0],))
-                    thread.start()
+                data, addr = self.socket.recvfrom(1024)
+                if data != b'':
+                    self.update_topology(Messages_UDP.decode_json(data),addr)
                 else:
-                    thread = threading.Thread(target=self.send_interface, args=(addr[0],))
-                    thread.start()
-                    
+                    if self.topology.correct_interface(addr[0]):
+                        thread = threading.Thread(target=self.send_neighbors, args=(addr[0],))
+                        thread.start()
+                    else:
+                        thread = threading.Thread(target=self.send_interface, args=(addr[0],))
+                        thread.start()
         except KeyboardInterrupt:
             print("\nServer disconnected")
+        finally:
             self.socket.close()
+            print("Socket closed.")
             sys.exit(0)
 
 if __name__ == "__main__":
