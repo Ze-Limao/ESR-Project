@@ -13,6 +13,14 @@
             {
                 "name": "n19",
                 "velocity": 1
+            },
+            {
+                "name": "n2",
+                "velocity": 1
+            },
+            {
+                "name": "n24",
+                "velocity": 1
             }
         ]
     },
@@ -36,6 +44,14 @@
             {
                 "name": "n19",
                 "velocity": 1
+            },
+            {
+                "name": "n2",
+                "velocity": 1
+            },
+            {
+                "name": "n21",
+                "velocity": 1
             }
         ]
     },
@@ -58,6 +74,10 @@
             },
             {
                 "name": "n7",
+                "velocity": 1
+            },
+            {
+                "name": "n8",
                 "velocity": 1
             }
         ]
