@@ -78,10 +78,7 @@ class Topology:
         return [self.get_ip(name) for name in names]
     
     def find_best_path(self, destination: str) -> Optional[Tuple[float, List[str]]]:
-        # Return cached result if available
-        if destination in self.paths:
-            return (self.distances[destination], self.paths[destination])
-            
+
         if destination not in self.topology:
             return None
         
@@ -133,37 +130,53 @@ class Topology:
             path.append(current)
             current = predecessors[current]
         path.reverse()
-        
-        # Store results in class
-        self.paths[destination] = path
-        self.distances[destination] = distances[destination]
 
         return (distances[destination], path)
     
+    # Function returns True if the path is new or different from the previous one
+    def store_path(self, destination: str, path: List[str], velocity: float) -> None:
+        if destination not in self.paths or self.paths[destination] != path:
+            self.paths[destination] = path
+            self.distances[destination] = velocity
+            return True
+        return False
+
     def build_tree(self) -> None:
-        self.tree = {}
-        self.parent_map = {}
+        tree: Dict[str, List[str]] = {}
+        parent_map: Dict[str, str] = {}
         for _, path in self.paths.items():
             # Set the server as the parent of the first node in the path
             first_node = path[0]
-            self.parent_map[first_node] = BOOTSTRAP_IP
+            parent_map[first_node] = BOOTSTRAP_IP
             # Add the first node as a child of the server IP in the tree
-            if BOOTSTRAP_IP not in self.tree:
-                self.tree[BOOTSTRAP_IP] = []
-            if first_node not in self.tree[BOOTSTRAP_IP]:
-                self.tree[BOOTSTRAP_IP].append(first_node)
+            if BOOTSTRAP_IP not in tree:
+                tree[BOOTSTRAP_IP] = []
+            if first_node not in tree[BOOTSTRAP_IP]:
+                tree[BOOTSTRAP_IP].append(first_node)
 
             for i in range(1, len(path)):
                 parent = path[i - 1]
                 node = path[i]
                 # Set the parent of the current node
-                self.parent_map[node] = parent
+                parent_map[node] = parent
                 # Initialize tree structure if not present
-                if parent not in self.tree:
-                    self.tree[parent] = []
+                if parent not in tree:
+                    tree[parent] = []
                 # Add child to parent's list
-                if node not in self.tree[parent]:
-                    self.tree[parent].append(node)
+                if node not in tree[parent]:
+                    tree[parent].append(node)
+        return (tree, parent_map)
+
+    # Returns the new parents of the nodes that need to be updated
+    def update_tree(self, new_tree: Dict[str, List[str]], new_parent_map: Dict[str, str]) -> List[Tuple[str,strgi]]:
+        new_parents = []
+        for node, parent in new_parent_map.items():
+            if node not in self.parent_map or self.parent_map[node] != parent:
+                new_parents.append((node, parent))
+        if new_parents:
+            self.tree = new_tree
+            self.parent_map = new_parent_map
+        return new_parents
 
     def get_parent(self, node: str) -> str:
         return self.parent_map[node] if node in self.parent_map else None
@@ -177,4 +190,3 @@ class Topology:
             if neighbour['name'] == self.get_name_by_ip(node):
                 neighbour['velocity'] = velocity
                 break
-        self.display()

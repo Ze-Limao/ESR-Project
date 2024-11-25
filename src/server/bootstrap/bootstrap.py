@@ -42,16 +42,25 @@ class Bootstrap:
             print(f"Unknown interface with IP {ip}")
 
     def calculate_paths(self) -> None:
+        recalculate_tree = False
         for pop in POINTS_OF_PRESENCE:
             path = self.topology.find_best_path(pop)
             if path != None:
                 distances, path = path
+                bool_new_path: bool = self.topology.store_path(pop, path, distances)
+                if bool_new_path:
+                    recalculate_tree = True
                 print(f"Best path to {pop}: {path} with distance {distances}")
             else:
                 print(f"Could not find a path to {pop}")
 
+        if recalculate_tree:
+            self.build_tree()
+
     def build_tree(self) -> None:
-        self.topology.build_tree()
+        (tree, parents) = self.topology.build_tree()
+        updated_parents = self.topology.update_tree(tree, parents)
+        # TODO: Send updated parents to the nodes
         self.topology.display_tree()
     
     def update_topology(self, data: Dict, addr: Tuple[str, int]) -> None:
