@@ -3,12 +3,6 @@ import json
 from typing import Union
 
 class Messages_UDP:
-    def encode(message: str) -> bytes:
-        return message.encode('utf-8')
-    
-    def decode(message: str) -> str:
-        return message.decode('utf-8')
-    
     def send_and_receive(conn: socket.socket, message: bytes, ip: str, port: int, timeout: float = 2.0, retries: int = 3) -> bytes:
         conn.sendto(message, (ip, port))
         conn.settimeout(timeout)

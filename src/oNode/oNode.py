@@ -14,6 +14,7 @@ class oNode:
     def __init__(self):
         self.socket_bootstrap = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket_bootstrap.bind(('', BOOTSTRAP_PORT))
+        self.socket_bootstrap_port = None
         
         self.socket_monitoring = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket_monitoring.bind(('', ONODE_PORT))
@@ -51,7 +52,6 @@ class oNode:
         self.socket_bootstrap.close()
         self.socket_bootstrap = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket_bootstrap.bind((interface, BOOTSTRAP_PORT))
-        self.ask_neighbors()
 
     def ask_neighbors(self) -> None:
         response_encoded = Messages_UDP.send_and_receive(self.socket_bootstrap, b'', BOOTSTRAP_IP, BOOTSTRAP_PORT)
@@ -62,9 +62,9 @@ class oNode:
         response_decoded = Messages_UDP.decode_json(response_encoded)
         if 'new_interface' in response_decoded:
             self.bind_new_interface(response_decoded['new_interface'])
-        else:
-            self.register_neighbors(response_decoded['neighbors'])
-            self.register_parent(response_decoded['parent'])
+
+        self.register_neighbors(response_decoded['neighbours'])
+        self.socket_bootstrap_port = response_decoded['port']
 
     def foward_stream(self, rtpsocket: socket.socket, video: str) -> None:
         rtpsocket.settimeout(1)  # Set a 1-second timeout
@@ -90,7 +90,7 @@ class oNode:
             self.streams.put(video, stream)
         else:
             if self.parent is not None:
-                response_encoded = Messages_UDP.send_and_receive(self.socket_bootstrap, video.encode(), self.parent, ONODE_PORT)
+                response_encoded = Messages_UDP.send_and_receive(self.socket_bootstrap, Messages_UDP.encode_json({"stream": video}), self.parent, ONODE_PORT)
                 if response_encoded is None:
                     print("No response from parent server")
                     return
@@ -104,6 +104,14 @@ class oNode:
                 stream["clients"].add(addr)
                 self.streams.put(video, stream)
 
+    def handle_message_received(self, data: Dict[str,str], ip) -> None:
+        if "stream" in data:
+            self.process_ask_for_stream(data["stream"], ip)
+        elif "parent" in data:
+            self.register_parent(data["parent"])
+        else:
+            print("Invalid message received")
+
     def receive_monitoring_messages(self) -> None:
         self.socket_monitoring.settimeout(1)  # Set a 1-second timeout
         while not self.stop_event.is_set():
@@ -112,9 +120,8 @@ class oNode:
                 print(f"Received monitoring message from {addr}")
                 Messages_UDP.send(self.socket_monitoring, b'', addr[0], addr[1])
                 if data != b'':
-                    video = Messages_UDP.decode(data)
-                    print(f"Video: {video}")
-                    self.process_ask_for_stream(video, addr[0])
+                    video = Messages_UDP.decode_json(data)
+                    self.handle_message_received(video, addr[0])
             except socket.timeout:
                 # Timeout occurred, loop back and check stop_event
                 continue
@@ -133,7 +140,7 @@ class oNode:
                 else:
                     times[neighbour] = time.time() - timestamp
             print(times)
-            Messages_UDP.send(self.socket_bootstrap, Messages_UDP.encode_json(times), BOOTSTRAP_IP, BOOTSTRAP_PORT)
+            Messages_UDP.send(self.socket_bootstrap, Messages_UDP.encode_json(times), BOOTSTRAP_IP, self.socket_bootstrap_port)
             time.sleep(1)
 
     def closeStreaming (self) -> None:

@@ -28,7 +28,7 @@ class oClient:
 		self.stop_event = threading.Event()
 
 	def ask_for_streaming(self) -> None:
-		data = Messages_UDP.send_and_receive(self.socket, Messages_UDP.encode(self.fileName), self.point_of_presence.read(), ONODE_PORT)
+		data = Messages_UDP.send_and_receive(self.socket, Messages_UDP.encode_json({"stream": self.fileName}), self.point_of_presence.read(), ONODE_PORT)
 		if data is None:
 			print("Error: Could not get response from point of presence")
 			sys.exit(1)

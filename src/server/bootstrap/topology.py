@@ -1,6 +1,7 @@
 from typing import TypedDict, List, Dict, Optional, Tuple
 import heapq
 from ...utils.config import SOURCE_NODE, BOOTSTRAP_IP
+import threading
 
 class Neighbors(TypedDict):
     name: str
@@ -19,6 +20,7 @@ class Topology:
         self.distances: Dict[str, float] = {}
         self.tree: Dict[str, List[str]] = {}
         self.parent_map: Dict[str, str]= {}
+        self.lock = threading.Lock()
         
     def add_nodes(self, nodes: Dict[str, Node]) -> None:
         for node, data in nodes.items():
@@ -135,11 +137,12 @@ class Topology:
     
     # Function returns True if the path is new or different from the previous one
     def store_path(self, destination: str, path: List[str], velocity: float) -> None:
-        if destination not in self.paths or self.paths[destination] != path:
-            self.paths[destination] = path
-            self.distances[destination] = velocity
-            return True
-        return False
+        with self.lock:
+            if destination not in self.paths or self.paths[destination] != path:
+                self.paths[destination] = path
+                self.distances[destination] = velocity
+                return True
+            return False
 
     def build_tree(self) -> None:
         tree: Dict[str, List[str]] = {}
@@ -168,25 +171,28 @@ class Topology:
         return (tree, parent_map)
 
     # Returns the new parents of the nodes that need to be updated
-    def update_tree(self, new_tree: Dict[str, List[str]], new_parent_map: Dict[str, str]) -> List[Tuple[str,strgi]]:
-        new_parents = []
-        for node, parent in new_parent_map.items():
-            if node not in self.parent_map or self.parent_map[node] != parent:
-                new_parents.append((node, parent))
-        if new_parents:
-            self.tree = new_tree
-            self.parent_map = new_parent_map
-        return new_parents
+    def update_tree(self, new_tree: Dict[str, List[str]], new_parent_map: Dict[str, str]) -> List[Tuple[str,str]]:
+        with self.lock:
+            new_parents = []
+            for node, parent in new_parent_map.items():
+                if node not in self.parent_map or self.parent_map[node] != parent:
+                    new_parents.append((node, parent))
+            if new_parents:
+                self.tree = new_tree
+                self.parent_map = new_parent_map
+            return new_parents
 
     def get_parent(self, node: str) -> str:
-        return self.parent_map[node] if node in self.parent_map else None
+        with self.lock:
+            return self.parent_map[node] if node in self.parent_map else None
     
     def display_tree(self) -> None:
         for parent, children in self.tree.items():
             print(f"{parent}: {children}")
 
     def update_velocity(self, node: str, velocity: float, ip: str) -> None:
-        for neighbour in self.topology[ip]['neighbors']:
-            if neighbour['name'] == self.get_name_by_ip(node):
-                neighbour['velocity'] = velocity
-                break
+        with self.lock:
+            for neighbour in self.topology[ip]['neighbors']:
+                if neighbour['name'] == self.get_name_by_ip(node):
+                    neighbour['velocity'] = velocity
+                    break

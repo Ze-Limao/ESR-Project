@@ -41,7 +41,7 @@ class Server:
 		while not self.stop_event.is_set():
 			try:
 				data, addr = self.socket_oNodes.recvfrom(1024)
-				video = Messages_UDP.decode(data)
+				video = Messages_UDP.decode_json(data)["stream"]
 				print(f"Received request for streaming {video} from {addr}")
 				if video in self.streams:
 					Messages_UDP.send(self.socket_oNodes, b'', addr[0], addr[1])
