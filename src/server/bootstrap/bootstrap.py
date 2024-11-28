@@ -66,7 +66,7 @@ class Bootstrap:
             Messages_UDP.send(self.socket, Messages_UDP.encode_json({'parent': parent}), node, BOOTSTRAP_PORT)
 
     def update_topology(self, data: Dict, ip: str) -> None:
-        print("Updating topology...")
+        print("Updating topology...", data)
         for node, time in data.items():
             self.topology.update_velocity(node, time, ip)
 

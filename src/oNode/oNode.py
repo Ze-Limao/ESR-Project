@@ -3,6 +3,7 @@ from typing import TypedDict, Dict
 from ..utils.safemap import SafeMap
 from ..utils.messages import Messages_UDP
 from ..utils.config import ONODE_PORT, BOOTSTRAP_IP, BOOTSTRAP_PORT, VIDEO_FILES, ONODE_MONITORING_PORT
+from typing import List
 
 class stream_information(TypedDict):
     is_streaming: bool
@@ -35,7 +36,7 @@ class oNode:
         self.streams = SafeMap(temp_dict)
 
         self.thread_monitoring = threading.Thread(target=self.receive_monitoring_messages)
-        self.thread_send_monitoriong = threading.Thread(target=self.send_monitoring_messages)
+        self.threads_monitoring_neighbours: List[threading.Thread] = []
         self.stop_event = threading.Event()
 
     def register_neighbors(self, neighbors: list):
@@ -127,18 +128,15 @@ class oNode:
                 print(f"An error occurred: {e}")
                 break
 
-    def send_monitoring_messages(self) -> None:
-        times = {}
+    def send_monitoring_messages(self, ip_neighbour: str) -> None:
         while not self.stop_event.is_set():
-            for neighbour in self.neighbors:
-                timestamp = time.time()
-                data = Messages_UDP.send_and_receive(self.socket_self_monitoring, b'', neighbour, ONODE_PORT)
-                if data == None:
-                    times[neighbour] = float('inf')
-                else:
-                    times[neighbour] = time.time() - timestamp
-            print(times)
-            Messages_UDP.send(self.socket_bootstrap, Messages_UDP.encode_json(times), BOOTSTRAP_IP, BOOTSTRAP_PORT)
+            rtt = float('inf')
+            timestamp = time.time()
+            data = Messages_UDP.send_and_receive(self.socket_self_monitoring, b'', ip_neighbour, ONODE_PORT)
+            if data != None:
+                rtt = time.time() - timestamp
+            print(rtt, ip_neighbour)
+            Messages_UDP.send(self.socket_bootstrap, Messages_UDP.encode_json({ip_neighbour: rtt}), BOOTSTRAP_IP, BOOTSTRAP_PORT)
             time.sleep(1)
 
     def closeStreaming (self) -> None:
@@ -152,10 +150,17 @@ class oNode:
                 stream["thread"] = None
 
         self.thread_monitoring.join()
-        self.thread_send_monitoriong.join()
+        for monitoring_thread in self.threads_monitoring_neighbours:
+            monitoring_thread.join()
         # Close sockets
         self.socket_bootstrap.close()
         self.socket_monitoring.close()
+
+    def start_threads_monitoring_neighbours(self) -> None:
+        for neighbour in self.neighbors:
+            thread = threading.Thread(target=self.send_monitoring_messages, args=(neighbour,))
+            thread.start()
+            self.threads_monitoring_neighbours.append(thread)
 
 def ctrlc_handler(sig, frame):
     print("Closing the server and the threads...")
@@ -177,5 +182,5 @@ if __name__ == "__main__":
 
     node = oNode()
     node.ask_neighbors()
-    node.thread_send_monitoriong.start()
     node.thread_monitoring.start()
+    node.start_threads_monitoring_neighbours()
