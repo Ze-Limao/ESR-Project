@@ -14,7 +14,6 @@ class oNode:
     def __init__(self):
         self.socket_bootstrap = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket_bootstrap.bind(('', BOOTSTRAP_PORT))
-        self.socket_bootstrap_port = None
         
         self.socket_monitoring = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket_monitoring.bind(('', ONODE_PORT))
@@ -64,7 +63,6 @@ class oNode:
             self.bind_new_interface(response_decoded['new_interface'])
 
         self.register_neighbors(response_decoded['neighbours'])
-        self.socket_bootstrap_port = response_decoded['port']
 
     def foward_stream(self, rtpsocket: socket.socket, video: str) -> None:
         rtpsocket.settimeout(1)  # Set a 1-second timeout
@@ -140,7 +138,7 @@ class oNode:
                 else:
                     times[neighbour] = time.time() - timestamp
             print(times)
-            Messages_UDP.send(self.socket_bootstrap, Messages_UDP.encode_json(times), BOOTSTRAP_IP, self.socket_bootstrap_port)
+            Messages_UDP.send(self.socket_bootstrap, Messages_UDP.encode_json(times), BOOTSTRAP_IP, BOOTSTRAP_PORT)
             time.sleep(1)
 
     def closeStreaming (self) -> None:

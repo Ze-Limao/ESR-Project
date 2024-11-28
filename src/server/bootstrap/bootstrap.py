@@ -1,4 +1,4 @@
-import sys, socket, threading, signal
+import sys, socket, threading
 from ...utils.filereader import FileReader
 from ...utils.messages import Messages_UDP
 from ...utils.config import BOOTSTRAP_PORT, POINTS_OF_PRESENCE
@@ -11,12 +11,9 @@ class Bootstrap:
         self.topology = Topology()
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.bind(('', 8080))
+        self.socket.bind(('', BOOTSTRAP_PORT))
         
         self.read_file()
-
-        self.port = 5000
-        self.threads_oNodes: List[threading.Thread] = []
 
     def read_file(self) -> None:
         file_reader = FileReader(self.file_path)
@@ -68,11 +65,12 @@ class Bootstrap:
         for node, parent in updated_parents:
             Messages_UDP.send(self.socket, Messages_UDP.encode_json({'parent': parent}), node, BOOTSTRAP_PORT)
 
-    def update_topology(self, data: Dict, addr: Tuple[str, int]) -> None:
+    def update_topology(self, data: Dict, ip: str) -> None:
+        print("Updating topology...")
         for node, time in data.items():
-            self.topology.update_velocity(node, time, addr[0])
+            self.topology.update_velocity(node, time, ip)
 
-    def send_initial_data(self, socket_onode: socket.socket, ip_onode: int, onode_port: int, port: int) -> None:
+    def send_initial_data(self, socket: socket.socket, ip_onode: int, onode_port: int) -> None:
         data = {}
         
         if self.topology.correct_interface(ip_onode):
@@ -81,37 +79,17 @@ class Bootstrap:
             correct_interface = self.topology.get_primary_interface(ip_onode)
             data["new_interface"] = correct_interface
             data["neighbours"] = self.get_neighbours(correct_interface)
-        data["port"] = port
 
-        Messages_UDP.send(socket_onode, Messages_UDP.encode_json(data), ip_onode, onode_port)
-
-    def handle_oNodes_monitoring(self, ip_onode: str, port_onode: int, port) -> None:
-        socket_onode = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        socket_onode.bind(('', port))
-
-        self.send_initial_data(socket_onode, ip_onode, port_onode, port)
-
-        socket_onode.settimeout(60)
-        while True:
-            try:
-                data, addr = socket_onode.recvfrom(1024)
-                print("Received data from ", addr)
-                self.update_topology(Messages_UDP.decode_json(data), addr)
-            except socket.timeout:
-                print("Timeout reached.")
-                break
-
-        socket_onode.close()
-        print(f"Socket of ip {ip_onode} closed.")
+        Messages_UDP.send(socket, Messages_UDP.encode_json(data), ip_onode, onode_port)
 
     def receive_connections(self) -> None:
         try:
             while True:
-                _, addr = self.socket.recvfrom(1024)
-                thread = threading.Thread(target=self.handle_oNodes_monitoring, args=(addr[0], addr[1], self.port))
-                thread.start()
-                self.threads_oNodes.append(thread)
-                self.port += 1
+                data, addr = self.socket.recvfrom(1024)
+                if data != b'':
+                    threading.Thread(target=self.update_topology, args=(Messages_UDP.decode_json(data), addr[0])).start()
+                else:
+                    threading.Thread(target=self.send_initial_data, args=(self.socket, addr[0], addr[1])).start()
         except KeyboardInterrupt:
             print("\nServer disconnected")
         finally:
@@ -119,22 +97,11 @@ class Bootstrap:
             print("Socket closed.")
             sys.exit(0)
 
-    def closeBootstrap(self):
-        for thread in self.threads_oNodes:
-            thread.join()
-        self.socket.close()
-
-def ctrlc_handler(sig, frame):
-    print("Closing the bootstrap and the threads...")
-    bootstrap.closeBootstrap()
-
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python3 -m src.server.bootstrap.bootstrap <file_path>")
         sys.exit(1)
     
-    signal.signal(signal.SIGINT, ctrlc_handler)
-
     bootstrap = Bootstrap(sys.argv[1])
     topology = bootstrap.get_topology()
     bootstrap.calculate_paths()
