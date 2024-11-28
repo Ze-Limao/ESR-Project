@@ -116,7 +116,7 @@ class oNode:
         while not self.stop_event.is_set():
             try:
                 data, addr = self.socket_monitoring.recvfrom(1024)
-                print(f"Received monitoring message from {addr}")
+                # print(f"Received monitoring message from {addr}")
                 Messages_UDP.send(self.socket_monitoring, b'', addr[0], addr[1])
                 if data != b'':
                     video = Messages_UDP.decode_json(data)
@@ -135,7 +135,7 @@ class oNode:
             data = Messages_UDP.send_and_receive(self.socket_self_monitoring, b'', ip_neighbour, ONODE_PORT)
             if data != None:
                 rtt = time.time() - timestamp
-            print(rtt, ip_neighbour)
+            # print(rtt, ip_neighbour)
             Messages_UDP.send(self.socket_bootstrap, Messages_UDP.encode_json({ip_neighbour: rtt}), BOOTSTRAP_IP, BOOTSTRAP_PORT)
             time.sleep(1)
 

@@ -1,4 +1,4 @@
-import sys, socket, threading
+import sys, socket, threading, time
 from ...utils.filereader import FileReader
 from ...utils.messages import Messages_UDP
 from ...utils.config import BOOTSTRAP_PORT, POINTS_OF_PRESENCE
@@ -14,6 +14,9 @@ class Bootstrap:
         self.socket.bind(('', BOOTSTRAP_PORT))
         
         self.read_file()
+
+        self.thread_calculate_paths = threading.Thread(target=self.calculate_paths)
+        self.stop_event = threading.Event()
 
     def read_file(self) -> None:
         file_reader = FileReader(self.file_path)
@@ -40,22 +43,26 @@ class Bootstrap:
             print(f"Unknown interface with IP {ip}")
 
     def calculate_paths(self) -> None:
-        recalculate_tree = False
-        for pop in POINTS_OF_PRESENCE:
-            path = self.topology.find_best_path(pop)
-            if path != None:
-                distances, path = path
-                bool_new_path: bool = self.topology.store_path(pop, path, distances)
-                if bool_new_path:
-                    recalculate_tree = True
-                print(f"Best path to {pop}: {path} with distance {distances}")
-            else:
-                print(f"Could not find a path to {pop}")
+        while not self.stop_event.is_set():   
+            recalculate_tree = False
+            for pop in POINTS_OF_PRESENCE:
+                path = self.topology.find_best_path(pop)
+                if path != None:
+                    distances, path = path
+                    bool_new_path: bool = self.topology.store_path(pop, path, distances)
+                    if bool_new_path:
+                        recalculate_tree = True
+                    print(f"Best path to {pop}: {path} with distance {distances}")
+                else:
+                    print(f"Could not find a path to {pop}")
 
-        if recalculate_tree:
-            self.build_tree()
+            if recalculate_tree:
+                self.build_tree()
+            
+            time.sleep(3)
 
     def build_tree(self) -> None:
+        print("Building tree...")
         (tree, parents) = self.topology.build_tree()
         updated_parents = self.topology.update_tree(tree, parents)
         self.update_nodes(updated_parents)
@@ -94,6 +101,8 @@ class Bootstrap:
             print("\nServer disconnected")
         finally:
             self.socket.close()
+            self.stop_event.set()
+            self.thread_calculate_paths.join()
             print("Socket closed.")
             sys.exit(0)
 
@@ -104,6 +113,6 @@ if __name__ == "__main__":
     
     bootstrap = Bootstrap(sys.argv[1])
     topology = bootstrap.get_topology()
-    bootstrap.calculate_paths()
     bootstrap.build_tree()
+    bootstrap.thread_calculate_paths.start()
     bootstrap.receive_connections()

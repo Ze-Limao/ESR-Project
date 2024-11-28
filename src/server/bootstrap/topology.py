@@ -192,7 +192,7 @@ class Topology:
 
     def update_velocity(self, node: str, velocity: float, ip: str) -> None:
         with self.lock:
-            for neighbour in self.topology[ip]['neighbors']:
-                if neighbour['name'] == self.get_name_by_ip(node):
-                    neighbour['velocity'] = velocity
+            for neighbor in self.topology[ip]['neighbors']:
+                if neighbor['name'] == self.get_name_by_ip(node):
+                    neighbor['velocity'] = velocity
                     break
