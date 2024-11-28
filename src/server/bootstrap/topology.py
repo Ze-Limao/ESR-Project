@@ -3,11 +3,10 @@ import heapq
 from ...utils.config import SOURCE_NODE, BOOTSTRAP_IP
 
 class Neighbors(TypedDict):
-    name: str
+    ip: str
     velocity: float
 
 class Node(TypedDict):
-    name: str
     possible_interfaces: List[str]
     neighbors: List[Neighbors]
 
@@ -38,14 +37,11 @@ class Topology:
 
     def display(self) -> None:
         for node, data in self.topology.items():
-            print(f"{node} ({data['name']}):")
+            print(f"{node}:")
             for conn in data['neighbors']:
                 print(f"  -> {conn}")
 
-    def get_name_by_ip(self, ip: str) -> str:
-        return self.topology[ip]['name']
-
-    def get_neighbors(self, node: str) -> List[str]:
+    def get_neighbors(self, node: str) -> List[Dict[str, float]]:
         return self.topology[node]['neighbors']
 
     def get_ip(self, name: str) -> str:
@@ -62,10 +58,7 @@ class Topology:
             if ip in data['possible_interfaces']:
                 return interface
         return None
-    
-    def get_ips_from_list_names(self, names: List[str]) -> List[str]:
-        return [self.get_ip(name) for name in names]
-    
+
     def find_best_path(self, destination: str) -> Optional[Tuple[float, List[str]]]:
         # Return cached result if available
         if destination in self.paths:
@@ -99,7 +92,7 @@ class Topology:
             
             # Check all neighbors of current node
             for neighbor in self.topology[current_node]['neighbors']:
-                neighbor_ip = self.get_ip(neighbor['name'])
+                neighbor_ip = neighbor['ip']
                 if neighbor_ip in visited:
                     continue
                     
@@ -155,7 +148,7 @@ class Topology:
                     self.tree[parent].append(node)
 
     def get_parent(self, node: str) -> str:
-        return self.parent_map[node]
+        return self.parent_map.get(node, None)
     
     def display_tree(self) -> None:
         for parent, children in self.tree.items():
