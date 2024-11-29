@@ -152,8 +152,7 @@ class Topology:
     def build_tree(self) -> None:
         tree: Dict[str, List[str]] = {}
         parent_map: Dict[str, str] = {}
-        for _, path in self.paths.get_items():
-            print(path)
+        for path in self.paths.get_values():
             first_node = path[0]
             parent_map[first_node] = BOOTSTRAP_IP
             if BOOTSTRAP_IP not in tree:

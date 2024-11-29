@@ -1,10 +1,11 @@
 import threading
+from typing import Dict
 
 # SafeMap: class that implements a thread-safe map. Implements most of the methods of a dict with a lock
 class SafeMap:
-    def __init__(self, map= {}):
+    def __init__(self, map=None):
         self.lock = threading.Lock()
-        self.map = map
+        self.map: Dict = map if map is not None else {}
 
     def __str__(self):
         with self.lock:
