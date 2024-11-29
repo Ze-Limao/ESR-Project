@@ -31,7 +31,7 @@ class Bootstrap:
         return self.topology        
 
     def get_neighbours(self, ip: str) -> List[str]:
-        neighbors = [neighbor['name'] for neighbor in self.topology.get_neighbors(ip)]
+        neighbors = [neighbor['ip'] for neighbor in self.topology.get_neighbors(ip)]
         return self.topology.get_ips_from_list_names(neighbors)
         
     def send_interface(self, ip: str) -> None:
