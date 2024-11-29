@@ -7,19 +7,19 @@
         "neighbors": [
             {
                 "ip": "10.0.14.2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.22.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.27.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.26.2",
-                "velocity": 1
+                "velocity": "inf"
             }
         ]
     },
@@ -33,23 +33,27 @@
         "neighbors": [
             {
                 "ip": "10.0.11.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.15.2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.22.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.27.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.30.2",
-                "velocity": 1
+                "velocity": "inf"
+            },
+            {
+                "ip": "10.0.13.1",
+                "velocity": "inf"
             }
         ]
     },
@@ -63,19 +67,23 @@
         "neighbors": [
             {
                 "ip": "10.0.14.2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.15.2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.19.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.10.2",
-                "velocity": 1
+                "velocity": "inf"
+            },
+            {
+                "ip": "10.0.13.1",
+                "velocity": "inf"
             }
         ]
     },
@@ -87,15 +95,19 @@
         "neighbors": [
             {
                 "ip": "10.0.14.2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.27.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.15.2",
-                "velocity": 1
+                "velocity": "inf"
+            },
+            {
+                "ip": "10.0.25.1",
+                "velocity": "inf"
             }
         ]
     },
@@ -107,15 +119,23 @@
         "neighbors": [
             {
                 "ip": "10.0.11.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.15.2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.25.1",
-                "velocity": 1
+                "velocity": "inf"
+            },
+            {
+                "ip": "10.0.13.1",
+                "velocity": "inf"
+            },
+            {
+                "ip": "10.0.14.2",
+                "velocity": "inf"
             }
         ]
     },
@@ -130,31 +150,31 @@
         "neighbors": [
             {
                 "ip": "10.0.11.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.14.2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.22.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.27.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.19.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.25.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.30.2",
-                "velocity": 1
+                "velocity": "inf"
             }
         ]
     },
@@ -167,23 +187,23 @@
         "neighbors": [
             {
                 "ip": "10.0.27.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.15.2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.11.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.30.2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.26.2",
-                "velocity": 1
+                "velocity": "inf"
             }
         ]
     },
@@ -196,17 +216,21 @@
         "neighbors": [
             {
                 "ip": "10.0.22.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.15.2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.30.2",
-                "velocity": 1
+                "velocity": "inf"
+            },
+            {
+                "ip": "10.0.10.2",
+                "velocity": "inf"
             }
-       ]
+        ]
     },
     "10.0.30.2": {
         "possible_interfaces": [
@@ -218,21 +242,25 @@
         "neighbors": [
             {
                 "ip": "10.0.25.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.15.2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.19.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.26.2",
-                "velocity": 1
-           }
-       ]
+                "velocity": "inf"
+            },
+            {
+                "ip": "10.0.14.2",
+                "velocity": "inf"
+            }
+        ]
     },
     "10.0.26.2": {
         "possible_interfaces": [
@@ -243,15 +271,19 @@
         "neighbors": [
             {
                 "ip": "10.0.25.1",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.30.2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.10.2",
-                "velocity": 1
+                "velocity": "inf"
+            },
+            {
+                "ip": "10.0.13.1",
+                "velocity": "inf"
             }
         ]
     },
@@ -262,12 +294,16 @@
         "neighbors": [
             {
                 "ip": "10.0.26.2",
-                "velocity": 1
+                "velocity": "inf"
             },
             {
                 "ip": "10.0.19.1",
-                "velocity": 1
+                "velocity": "inf"
+            },
+            {
+                "ip": "10.0.22.1",
+                "velocity": "inf"
             }
-       ]
+        ]
     }
 }
