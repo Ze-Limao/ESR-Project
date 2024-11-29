@@ -28,7 +28,6 @@ class Topology:
     def add_nodes(self, nodes: Dict[str, Node]) -> None:
         for node, data in nodes.items():
             object = {
-                'name': data['name'],
                 'possible_interfaces': data['possible_interfaces'],
                 'neighbors': []
             }
@@ -62,12 +61,6 @@ class Topology:
     def get_neighbors(self, node: str) -> List[Dict[str, float]]:
         return self.topology.get(node)['neighbors']
 
-    def get_ip(self, name: str) -> Optional[str]:
-        for ip, data in self.topology.get_items():
-            if data['name'] == name:
-                return ip
-        return None
-    
     def correct_interface(self, ip: str):
         return self.topology.exists(ip)
     
@@ -113,7 +106,7 @@ class Topology:
                     continue
                     
                 # Use velocity as weight (higher velocity = lower weight)
-                weight = 1 / neighbor['velocity'] if neighbor['velocity'] != inf else inf
+                weight = neighbor['velocity'] if neighbor['velocity'] != inf else inf
                 new_distance = distances[current_node] + weight
                 
                 if new_distance < distances[neighbor_ip]:
