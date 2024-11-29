@@ -1,7 +1,7 @@
 from typing import TypedDict, List, Dict, Optional, Tuple
 import heapq
 from ...utils.config import SOURCE_NODE, BOOTSTRAP_IP
-import threading
+from ...utils.safemap import SafeMap
 
 class Neighbors(TypedDict):
     name: str
@@ -14,17 +14,21 @@ class Node(TypedDict):
 
 class Topology:
     def __init__(self):
-        self.topology: Dict[str, Node] = {}
+        # Dict[str, Node]
+        self.topology = SafeMap()
         # Store computed paths and distances
-        self.paths: Dict[str, List[str]] = {}
-        self.distances: Dict[str, float] = {}
-        self.tree: Dict[str, List[str]] = {}
-        self.parent_map: Dict[str, str]= {}
-        self.lock = threading.Lock()
+        # Dict[str, List[str]]
+        self.paths = SafeMap()
+        # Dict[str, float]
+        self.distances = SafeMap()
+        # Dict[str, List[str]]
+        self.tree = SafeMap()
+        # Dict[str, str]
+        self.parent_map= SafeMap()
         
     def add_nodes(self, nodes: Dict[str, Node]) -> None:
         for node, data in nodes.items():
-            self.topology[node] = {
+            object = {
                 'name': data['name'],
                 'possible_interfaces': data['possible_interfaces'],
                 'neighbors': []
@@ -34,15 +38,16 @@ class Topology:
                     neighbor['velocity'] = float('inf')
                 else:
                     neighbor['velocity'] = float(neighbor['velocity'])
-                self.topology[node]['neighbors'].append(neighbor)
+                object['neighbors'].append(neighbor)
+            self.topology.put(node, object)
 
     def get_vertices(self) -> List[str]:
-        return list(self.topology.keys())
+        return list(self.topology.get_keys())
 
     def get_edges(self) -> List[tuple]:
         edges = []
         seen = set()
-        for node, data in self.topology.items():
+        for node, data in self.topology.get_items():
             for neighbor in data['neighbors']:
                 if neighbor not in seen:
                     edges.append((node, neighbor))
@@ -50,28 +55,28 @@ class Topology:
         return edges
 
     def display(self) -> None:
-        for node, data in self.topology.items():
+        for node, data in self.topology.get_items():
             print(f"{node} ({data['name']}):")
             for conn in data['neighbors']:
                 print(f"  -> {conn}")
 
     def get_name_by_ip(self, ip: str) -> str:
-        return self.topology[ip]['name']
+        return self.topology.get(ip)['name']
 
     def get_neighbors(self, node: str) -> List[str]:
-        return self.topology[node]['neighbors']
+        return self.topology.get(node)['neighbors']
 
-    def get_ip(self, name: str) -> str:
-        for ip, data in self.topology.items():
+    def get_ip(self, name: str) -> Optional[str]:
+        for ip, data in self.topology.get_items():
             if data['name'] == name:
                 return ip
         return None
     
     def correct_interface(self, ip: str):
-        return ip in self.topology
+        return self.topology.exists(ip)
     
     def get_primary_interface(self, ip: str) -> str:
-        for interface, data in self.topology.items():
+        for interface, data in self.topology.get_items():
             if ip in data['possible_interfaces']:
                 return interface
         return None
@@ -81,15 +86,16 @@ class Topology:
     
     def find_best_path(self, destination: str) -> Optional[Tuple[float, List[str]]]:
 
-        if destination not in self.topology:
+        if not self.topology.exists(destination):
             return None
         
         inf = float('inf')
 
         # Initialize distances and predecessors
-        distances = {node: inf for node in self.topology}
+        keys = self.topology.get_keys()
+        distances = {node: inf for node in keys}
         distances[SOURCE_NODE] = 0
-        predecessors = {node: None for node in self.topology}
+        predecessors = {node: None for node in keys}
         
         # Priority queue for Dijkstra's algorithm
         pq = [(0, SOURCE_NODE)]
@@ -108,7 +114,7 @@ class Topology:
                 break
             
             # Check all neighbors of current node
-            for neighbor in self.topology[current_node]['neighbors']:
+            for neighbor in self.topology.get(current_node)['neighbors']:
                 neighbor_ip = self.get_ip(neighbor['name'])
                 if neighbor_ip in visited:
                     continue
@@ -137,21 +143,19 @@ class Topology:
     
     # Function returns True if the path is new or different from the previous one
     def store_path(self, destination: str, path: List[str], velocity: float) -> None:
-        with self.lock:
-            if destination not in self.paths or self.paths[destination] != path:
-                self.paths[destination] = path
-                self.distances[destination] = velocity
-                return True
-            return False
+        if not self.paths.exists(destination) or self.paths.get(destination) != path:
+            self.paths.put(destination, path)
+            self.distances.put(destination, velocity)
+            return True
+        return False
 
     def build_tree(self) -> None:
         tree: Dict[str, List[str]] = {}
         parent_map: Dict[str, str] = {}
-        for _, path in self.paths.items():
-            # Set the server as the parent of the first node in the path
+        for _, path in self.paths.get_items():
+            print(path)
             first_node = path[0]
             parent_map[first_node] = BOOTSTRAP_IP
-            # Add the first node as a child of the server IP in the tree
             if BOOTSTRAP_IP not in tree:
                 tree[BOOTSTRAP_IP] = []
             if first_node not in tree[BOOTSTRAP_IP]:
@@ -160,39 +164,35 @@ class Topology:
             for i in range(1, len(path)):
                 parent = path[i - 1]
                 node = path[i]
-                # Set the parent of the current node
                 parent_map[node] = parent
-                # Initialize tree structure if not present
                 if parent not in tree:
                     tree[parent] = []
-                # Add child to parent's list
                 if node not in tree[parent]:
                     tree[parent].append(node)
         return (tree, parent_map)
 
     # Returns the new parents of the nodes that need to be updated
     def update_tree(self, new_tree: Dict[str, List[str]], new_parent_map: Dict[str, str]) -> List[Tuple[str,str]]:
-        with self.lock:
-            new_parents = []
-            for node, parent in new_parent_map.items():
-                if node not in self.parent_map or self.parent_map[node] != parent:
-                    new_parents.append((node, parent))
-            if new_parents:
-                self.tree = new_tree
-                self.parent_map = new_parent_map
-            return new_parents
+        new_parents = []
+        for node, parent in new_parent_map.items():
+            if not self.parent_map.exists(node) or self.parent_map.get(node) != parent:
+                new_parents.append((node, parent))
+        if new_parents:
+            self.tree = SafeMap(new_tree)
+            self.parent_map = SafeMap(new_parent_map)
+        return new_parents
 
     def get_parent(self, node: str) -> str:
-        with self.lock:
-            return self.parent_map[node] if node in self.parent_map else None
+        return self.parent_map.get(node) if self.parent_map.exists(node) else None
     
     def display_tree(self) -> None:
-        for parent, children in self.tree.items():
+        for parent, children in self.tree.get_items():
             print(f"{parent}: {children}")
 
     def update_velocity(self, node: str, velocity: float, ip: str) -> None:
-        with self.lock:
-            for neighbor in self.topology[ip]['neighbors']:
-                if neighbor['name'] == self.get_name_by_ip(node):
-                    neighbor['velocity'] = velocity
-                    break
+        information_node: Node = self.topology.get(ip)
+        for neighbor in information_node['neighbors']:
+            if neighbor['name'] == self.get_name_by_ip(node):
+                neighbor['velocity'] = velocity
+                break
+        self.topology.put(ip, information_node)
