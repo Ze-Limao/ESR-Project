@@ -27,10 +27,9 @@ class Bootstrap:
         return self.topology        
 
     def send_neighbors(self, ip: str) -> None:
-        neighbors = [neighbor['name'] for neighbor in self.topology.get_neighbors(ip)]
-        ips_neighbors = self.topology.get_ips_from_list_names(neighbors)
+        neighbors = [neighbor['ip'] for neighbor in self.topology.get_neighbors(ip)]
         parent = self.topology.get_parent(ip)
-        Messages_UDP.send(self.socket, Messages_UDP.encode_json({'neighbors': ips_neighbors, 'parent': parent}), ip, BOOTSTRAP_PORT)
+        Messages_UDP.send(self.socket, Messages_UDP.encode_json({'neighbors': neighbors, 'parent': parent}), ip, BOOTSTRAP_PORT)
         
     def send_interface(self, ip: str) -> None:
         interface = self.topology.get_primary_interface(ip)
