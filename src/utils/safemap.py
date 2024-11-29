@@ -17,7 +17,7 @@ class SafeMap:
 
     def get(self, key):
         with self.lock:
-            return self.map.get(key)
+            return self.map.get(key, None)
 
     def remove(self, key):
         with self.lock:
