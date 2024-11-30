@@ -68,6 +68,7 @@ class oNode:
 
     def foward_stream(self, rtpsocket: socket.socket, video: str) -> None:
         rtpsocket.settimeout(1)  # Set a 1-second timeout
+        retries = 0
         while not self.stop_event.is_set():
             try:
                 data, addr = rtpsocket.recvfrom(40480)
@@ -76,11 +77,14 @@ class oNode:
                 for client in stream["clients"]:
                     Messages_UDP.send(rtpsocket, data, client, stream["port"])
             except socket.timeout:
-                stream: stream_information = self.streams.get(video)
-                stream["is_streaming"] = False
-                self.streams.put(video, stream)
-                print(f"Stream for video {video} has stopped due to timeout.")
-                break
+                retries += 1
+                print(f"Timeout occurred. Retry {retries}/{MAX_RETRIES}")
+                if retries > MAX_RETRIES:
+                    stream: stream_information = self.streams.get(video)
+                    stream["is_streaming"] = False
+                    self.streams.put(video, stream)
+                    print(f"Stream for video {video} has stopped after {MAX_RETRIES} retries.")
+                    break
             except Exception as e:
                 print(f"An error occurred: {e}")
                 break
@@ -109,7 +113,6 @@ class oNode:
 
     def receive_monitoring_messages(self) -> None:
         self.socket_monitoring.settimeout(1)  # Set a 1-second timeout
-        retry_count = 0
         while not self.stop_event.is_set():
             try:
                 data, addr = self.socket_monitoring.recvfrom(1024)
@@ -120,11 +123,7 @@ class oNode:
                     print(f"Video: {video}")
                     self.process_ask_for_stream(video, addr[0])
             except socket.timeout:
-                print("Timeout occurred while waiting for monitoring messages.")
-                retry_count += 1
-                if retry_count > MAX_RETRIES:
-                    print("Max retries reached. Exiting monitoring loop.")
-                    break
+                # Timeout occurred, loop back and check stop_event
                 continue
             except Exception as e:
                 print(f"An error occurred: {e}")
