@@ -19,9 +19,6 @@ class oNode:
         self.socket_monitoring = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket_monitoring.bind(('', ONODE_PORT))
 
-        self.socket_self_monitoring = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket_self_monitoring.bind(('', ONODE_MONITORING_PORT))
-
         self.neighbors = []
         self.parent = None
 
@@ -37,6 +34,8 @@ class oNode:
 
         self.thread_monitoring = threading.Thread(target=self.receive_monitoring_messages)
         self.threads_monitoring_neighbours: List[threading.Thread] = []
+        self.port_monitoring = ONODE_MONITORING_PORT
+        self.sockets_monitoring_neighbours: List[socket.socket] = []
         self.stop_event = threading.Event()
 
     def register_neighbors(self, neighbors: list):
@@ -128,14 +127,13 @@ class oNode:
                 print(f"An error occurred: {e}")
                 break
 
-    def send_monitoring_messages(self, ip_neighbour: str) -> None:
+    def send_monitoring_messages(self, socket_monitoring: socket.socket, ip_neighbour: str) -> None:
         while not self.stop_event.is_set():
             rtt = float('inf')
             timestamp = time.time()
-            data = Messages_UDP.send_and_receive(self.socket_self_monitoring, b'', ip_neighbour, ONODE_PORT)
+            data = Messages_UDP.send_and_receive(socket_monitoring, b'', ip_neighbour, ONODE_PORT)
             if data != None:
                 rtt = time.time() - timestamp
-            # print(rtt, ip_neighbour)
             Messages_UDP.send(self.socket_bootstrap, Messages_UDP.encode_json({ip_neighbour: rtt}), BOOTSTRAP_IP, BOOTSTRAP_PORT)
             time.sleep(1)
 
@@ -155,10 +153,16 @@ class oNode:
         # Close sockets
         self.socket_bootstrap.close()
         self.socket_monitoring.close()
+        for socket_monitoring_neighbour in self.sockets_monitoring_neighbours:
+            socket_monitoring_neighbour.close()
 
     def start_threads_monitoring_neighbours(self) -> None:
         for neighbour in self.neighbors:
-            thread = threading.Thread(target=self.send_monitoring_messages, args=(neighbour,))
+            socket_monitoring_neighbour = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            socket_monitoring_neighbour.bind(('', self.port_monitoring))
+            self.sockets_monitoring_neighbours.append(socket_monitoring_neighbour)
+            self.port_monitoring += 1
+            thread = threading.Thread(target=self.send_monitoring_messages, args=(socket_monitoring_neighbour,neighbour,))
             thread.start()
             self.threads_monitoring_neighbours.append(thread)
 

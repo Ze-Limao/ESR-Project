@@ -1,7 +1,7 @@
 import socket, threading
 from tkinter import *
 from PIL import Image, ImageTk
-from ..utils.config import RTP_PORT, SERVER_IP, VIDEO_FILES
+from ..utils.config import SERVER_IP, VIDEO_FILES
 from ..utils.stream.RtpPacket import RtpPacket
 import time
 
@@ -13,7 +13,6 @@ class ClientStream:
     def __init__(self, master: Tk, fileName: str):
         self.serverAddr: str = SERVER_IP
         self.serverPort: int = VIDEO_FILES[fileName]
-        self.rtpPort: int = RTP_PORT
         self.fileName: str = fileName
         self.master: Tk = master
         self.master.title("RTPClient")

@@ -40,6 +40,6 @@ class SafeMap:
         with self.lock:
             return key in self.map
     
-    def isEmpty (self):
+    def isEmpty(self):
         with self.lock:
             return len(self.map) == 0

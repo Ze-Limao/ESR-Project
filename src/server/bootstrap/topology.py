@@ -71,7 +71,6 @@ class Topology:
         return None
 
     def find_best_path(self, destination: str) -> Optional[Tuple[float, List[str]]]:
-
         if not self.topology.exists(destination):
             return None
         
@@ -174,10 +173,11 @@ class Topology:
         for parent, children in self.tree.get_items():
             print(f"{parent}: {children}")
 
-    def update_velocity(self, node: str, velocity: float, ip: str) -> None:
-        information_node: Node = self.topology.get(ip)
+    def update_velocity(self, ip_node: str, ip_neigbour: str, velocity: float) -> None:
+        print(f"Updating velocity from {ip_node} to {ip_neigbour} with {velocity}")
+        information_node: Node = self.topology.get(ip_node)
         for neighbor in information_node['neighbors']:
-            if neighbor['name'] == self.get_name_by_ip(node):
+            if neighbor['ip'] == ip_neigbour:
                 neighbor['velocity'] = velocity
                 break
-        self.topology.put(ip, information_node)
+        self.topology.put(ip_node, information_node)

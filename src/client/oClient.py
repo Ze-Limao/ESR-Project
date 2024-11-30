@@ -2,7 +2,7 @@ import sys, threading, time, socket, signal
 from tkinter import Tk
 from .ClientStream import ClientStream
 from ..utils.messages import Messages_UDP
-from ..utils.config import ONODE_PORT, RTP_PORT, SERVER_IP, OCLIENT_PORT
+from ..utils.config import ONODE_PORT, SERVER_IP, OCLIENT_PORT
 from ..utils.safemap import SafeMap
 from ..utils.safestring import SafeString
 from typing import List
@@ -10,7 +10,6 @@ from typing import List
 class oClient:
 	def __init__(self, fileName: str):
 		self.serverAddr: str = SERVER_IP
-		self.rtpPort: int = RTP_PORT
 		self.fileName: str = fileName
 		self.root = Tk()
 		# SOCKET TO ASK FOR STREAMING

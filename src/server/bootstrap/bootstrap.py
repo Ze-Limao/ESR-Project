@@ -27,9 +27,6 @@ class Bootstrap:
         else:
             sys.exit(1)
 
-    def get_topology(self) -> Topology:
-        return self.topology        
-
     def get_neighbours(self, ip: str) -> List[str]:
         return [neighbor['ip'] for neighbor in self.topology.get_neighbors(ip)]
         
@@ -42,7 +39,7 @@ class Bootstrap:
             print(f"Unknown interface with IP {ip}")
 
     def calculate_paths(self) -> None:
-        while not self.stop_event.is_set():   
+        while not self.stop_event.is_set(): 
             recalculate_tree = False
             for pop in POINTS_OF_PRESENCE:
                 path = self.topology.find_best_path(pop)
@@ -71,10 +68,9 @@ class Bootstrap:
         for node, parent in updated_parents:
             Messages_UDP.send(self.socket, Messages_UDP.encode_json({'parent': parent}), node, BOOTSTRAP_PORT)
 
-    def update_topology(self, data: Dict, ip: str) -> None:
-        print("Updating topology...", data)
-        for node, time in data.items():
-            self.topology.update_velocity(node, time, ip)
+    def update_topology(self, data: Dict, ip_node: str) -> None:
+        for ip_neighbor, time in data.items():
+            self.topology.update_velocity(ip_node, ip_neighbor, time)
 
     def send_initial_data(self, socket: socket.socket, ip_onode: int, onode_port: int) -> None:
         data = {}
@@ -111,7 +107,6 @@ if __name__ == "__main__":
         sys.exit(1)
     
     bootstrap = Bootstrap(sys.argv[1])
-    topology = bootstrap.get_topology()
     bootstrap.build_tree()
     bootstrap.thread_calculate_paths.start()
     bootstrap.receive_connections()
