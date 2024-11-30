@@ -52,9 +52,27 @@ class oNode:
         print(f"Neighbors: {self.neighbors}")
 
     def register_parent(self, parent: str):
+        last_parent = self.parent
         self.parent = parent
         print(f"Parent: {self.parent}")
+        if last_parent is not None:  
+            self.update_parent_streaming(last_parent)
 
+    def ask_for_stream(self, video: str) -> None:
+        response =  Messages_UDP.send_and_receive(self.socket_ask_for_stream, Messages_UDP.encode_json({"stream": video}), self.parent, ASK_FOR_STREAM_PORT)
+        if response is None:
+            print("No response from parent server")
+        return response
+
+    def update_parent_streaming(self, last_parent: str) -> None:
+        Messages_UDP.send(self.socket_ask_for_stream, b'', last_parent, ASK_FOR_STREAM_PORT)
+        for video in self.streams.get_keys():
+            stream: stream_information = self.streams.get(video)
+            if stream["is_streaming"]:
+                response = self.ask_for_stream(video)
+                if response is None:
+                    continue
+                
     def bind_new_interface(self, interface: str) -> None:
         print(f"New interface: {interface}")
         self.socket_bootstrap.close()
@@ -83,6 +101,7 @@ class oNode:
                 print(f"Received stream from {addr}")
                 stream: stream_information = self.streams.get(video)
                 for client in stream["clients"]:
+                    print("Seding stream to client")
                     Messages_UDP.send(rtpsocket, data, client, stream["port"])
             except socket.timeout:
                 # Timeout occurred, loop back and check stop_event
@@ -96,13 +115,11 @@ class oNode:
 
         if stream["is_streaming"]:
             stream["clients"].add(addr)
-            self.streams.put(video, stream)
         else:
             if self.parent is not None:
-                response_encoded = Messages_UDP.send_and_receive(self.socket_ask_for_stream, Messages_UDP.encode_json({"stream": video}), self.parent, ASK_FOR_STREAM_PORT)
+                response_encoded = self.ask_for_stream(video)
                 if response_encoded is None:
-                    print("No response from parent server")
-                    return
+                   return
 
                 rtpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 rtpsocket.bind(('', stream["port"]))
@@ -111,13 +128,23 @@ class oNode:
                 stream["thread"].start()
                 stream["is_streaming"] = True
                 stream["clients"].add(addr)
-                self.streams.put(video, stream)
+        self.streams.put(video, stream)
+
+    def remove_client(self, addr: str) -> None:
+        values_streams : stream_information = self.streams.get_values()
+        for stream in values_streams:
+            if addr in stream["clients"]:
+                stream["clients"].remove(addr)
+                self.streams.put(stream, stream)
 
     def messages_ask_for_stream(self) -> None:
         self.socket_ask_for_stream.settimeout(1)
         while not self.stop_event.is_set():
             try:
                 data, addr = self.socket_ask_for_stream.recvfrom(1024)
+                if data == b'':
+                    self.remove_client(addr[0])
+                    continue
                 video = Messages_UDP.decode_json(data)
                 Messages_UDP.send(self.socket_ask_for_stream, b'', addr[0], addr[1])
                 self.process_ask_for_stream(video["stream"], addr[0])
