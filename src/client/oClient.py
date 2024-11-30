@@ -2,7 +2,7 @@ import sys, threading, time, socket, signal
 from tkinter import Tk
 from .ClientStream import ClientStream
 from ..utils.messages import Messages_UDP
-from ..utils.config import ONODE_PORT, SERVER_IP, OCLIENT_PORT
+from ..utils.config import ONODE_PORT, SERVER_IP, OCLIENT_PORT, ASK_FOR_STREAM_PORT
 from ..utils.safemap import SafeMap
 from ..utils.safestring import SafeString
 from typing import List
@@ -27,7 +27,7 @@ class oClient:
 		self.stop_event = threading.Event()
 
 	def ask_for_streaming(self) -> None:
-		data = Messages_UDP.send_and_receive(self.socket, Messages_UDP.encode_json({"stream": self.fileName}), self.point_of_presence.read(), ONODE_PORT)
+		data = Messages_UDP.send_and_receive(self.socket, Messages_UDP.encode_json({"stream": self.fileName}), self.point_of_presence.read(), ASK_FOR_STREAM_PORT)
 		if data is None:
 			print("Error: Could not get response from point of presence")
 			sys.exit(1)

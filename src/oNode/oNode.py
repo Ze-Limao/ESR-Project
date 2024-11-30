@@ -2,7 +2,7 @@ import socket, sys, threading, signal, time
 from typing import TypedDict, Dict
 from ..utils.safemap import SafeMap
 from ..utils.messages import Messages_UDP
-from ..utils.config import ONODE_PORT, BOOTSTRAP_IP, BOOTSTRAP_PORT, VIDEO_FILES, ONODE_MONITORING_PORT
+from ..utils.config import ONODE_PORT, BOOTSTRAP_IP, BOOTSTRAP_PORT, VIDEO_FILES, ONODE_MONITORING_PORT, ASK_FOR_STREAM_PORT
 from typing import List
 
 class stream_information(TypedDict):
@@ -19,6 +19,11 @@ class oNode:
         self.socket_monitoring = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket_monitoring.bind(('', ONODE_PORT))
 
+        self.socket_ask_for_stream = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket_ask_for_stream.bind(('', ASK_FOR_STREAM_PORT))
+
+        self.force_ip = None
+
         self.neighbors = []
         self.parent = None
 
@@ -33,9 +38,13 @@ class oNode:
         self.streams = SafeMap(temp_dict)
 
         self.thread_monitoring = threading.Thread(target=self.receive_monitoring_messages)
+        self.thread_ask_for_stream = threading.Thread(target=self.messages_ask_for_stream)
+        self.thread_receive_new_parents = threading.Thread(target=self.receive_new_parents)
+
         self.threads_monitoring_neighbours: List[threading.Thread] = []
-        self.port_monitoring = ONODE_MONITORING_PORT
         self.sockets_monitoring_neighbours: List[socket.socket] = []
+        self.port_monitoring = ONODE_MONITORING_PORT
+
         self.stop_event = threading.Event()
 
     def register_neighbors(self, neighbors: list):
@@ -51,6 +60,8 @@ class oNode:
         self.socket_bootstrap.close()
         self.socket_bootstrap = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket_bootstrap.bind((interface, BOOTSTRAP_PORT))
+
+        self.force_ip = interface
 
     def ask_neighbors(self) -> None:
         response_encoded = Messages_UDP.send_and_receive(self.socket_bootstrap, b'', BOOTSTRAP_IP, BOOTSTRAP_PORT)
@@ -88,7 +99,7 @@ class oNode:
             self.streams.put(video, stream)
         else:
             if self.parent is not None:
-                response_encoded = Messages_UDP.send_and_receive(self.socket_bootstrap, Messages_UDP.encode_json({"stream": video}), self.parent, ONODE_PORT)
+                response_encoded = Messages_UDP.send_and_receive(self.socket_ask_for_stream, Messages_UDP.encode_json({"stream": video}), self.parent, ASK_FOR_STREAM_PORT)
                 if response_encoded is None:
                     print("No response from parent server")
                     return
@@ -102,24 +113,38 @@ class oNode:
                 stream["clients"].add(addr)
                 self.streams.put(video, stream)
 
-    def handle_message_received(self, data: Dict[str,str], ip) -> None:
-        if "stream" in data:
-            self.process_ask_for_stream(data["stream"], ip)
-        elif "parent" in data:
-            self.register_parent(data["parent"])
-        else:
-            print("Invalid message received")
+    def messages_ask_for_stream(self) -> None:
+        self.socket_ask_for_stream.settimeout(1)
+        while not self.stop_event.is_set():
+            try:
+                data, addr = self.socket_ask_for_stream.recvfrom(1024)
+                video = Messages_UDP.decode_json(data)
+                Messages_UDP.send(self.socket_ask_for_stream, b'', addr[0], addr[1])
+                self.process_ask_for_stream(video["stream"], addr[0])
+            except socket.timeout:
+                # Timeout occurred, loop back and check stop_event
+                continue
+            except Exception as e:
+                print(f"An error occurred: {e}")
+
+    def receive_new_parents(self) -> None:
+        self.socket_bootstrap.settimeout(1)
+        while not self.stop_event.is_set():
+            try:
+                data, _ = self.socket_bootstrap.recvfrom(1024)
+                data_decoded = Messages_UDP.decode_json(data)
+                self.register_parent(data_decoded['parent'])
+            except socket.timeout:
+                continue
+            except Exception as e:
+                print(f"An error occurred: {e}")
 
     def receive_monitoring_messages(self) -> None:
         self.socket_monitoring.settimeout(1)  # Set a 1-second timeout
         while not self.stop_event.is_set():
             try:
-                data, addr = self.socket_monitoring.recvfrom(1024)
-                # print(f"Received monitoring message from {addr}")
+                _, addr = self.socket_monitoring.recvfrom(1024)
                 Messages_UDP.send(self.socket_monitoring, b'', addr[0], addr[1])
-                if data != b'':
-                    video = Messages_UDP.decode_json(data)
-                    self.handle_message_received(video, addr[0])
             except socket.timeout:
                 # Timeout occurred, loop back and check stop_event
                 continue
@@ -127,14 +152,14 @@ class oNode:
                 print(f"An error occurred: {e}")
                 break
 
-    def send_monitoring_messages(self, socket_monitoring: socket.socket, ip_neighbour: str) -> None:
+    def send_monitoring_messages(self, socket_monitoring_neighbour: socket.socket, ip_neighbour: str) -> None:
         while not self.stop_event.is_set():
             rtt = float('inf')
             timestamp = time.time()
-            data = Messages_UDP.send_and_receive(socket_monitoring, b'', ip_neighbour, ONODE_PORT)
+            data = Messages_UDP.send_and_receive(socket_monitoring_neighbour, b'', ip_neighbour, ONODE_PORT)
             if data != None:
                 rtt = time.time() - timestamp
-            Messages_UDP.send(self.socket_bootstrap, Messages_UDP.encode_json({ip_neighbour: rtt}), BOOTSTRAP_IP, BOOTSTRAP_PORT)
+            Messages_UDP.send(socket_monitoring_neighbour, Messages_UDP.encode_json({ip_neighbour: rtt}), BOOTSTRAP_IP, BOOTSTRAP_PORT)
             time.sleep(1)
 
     def closeStreaming (self) -> None:
@@ -147,9 +172,12 @@ class oNode:
                 stream["thread"].join()
                 stream["thread"] = None
 
-        self.thread_monitoring.join()
         for monitoring_thread in self.threads_monitoring_neighbours:
             monitoring_thread.join()
+
+        self.thread_monitoring.join()
+        self.thread_ask_for_stream.join()
+        self.thread_receive_new_parents.join()
         # Close sockets
         self.socket_bootstrap.close()
         self.socket_monitoring.close()
@@ -159,7 +187,11 @@ class oNode:
     def start_threads_monitoring_neighbours(self) -> None:
         for neighbour in self.neighbors:
             socket_monitoring_neighbour = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            socket_monitoring_neighbour.bind(('', self.port_monitoring))
+            # If bootstrap has given a new interface, the monitoring socket must be bound to it so the bootstrap can recognize the node
+            if self.force_ip is not None:
+                socket_monitoring_neighbour.bind((self.force_ip, self.port_monitoring))
+            else:
+                socket_monitoring_neighbour.bind(('', self.port_monitoring))
             self.sockets_monitoring_neighbours.append(socket_monitoring_neighbour)
             self.port_monitoring += 1
             thread = threading.Thread(target=self.send_monitoring_messages, args=(socket_monitoring_neighbour,neighbour,))
@@ -187,4 +219,6 @@ if __name__ == "__main__":
     node = oNode()
     node.ask_neighbors()
     node.thread_monitoring.start()
+    node.thread_ask_for_stream.start()
+    node.thread_receive_new_parents.start()
     node.start_threads_monitoring_neighbours()
