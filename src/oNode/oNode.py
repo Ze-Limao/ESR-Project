@@ -82,6 +82,7 @@ class oNode:
                 if retries > MAX_RETRIES:
                     stream: stream_information = self.streams.get(video)
                     stream["is_streaming"] = False
+                    stream["clients"].clear()
                     self.streams.put(video, stream)
                     print(f"Stream for video {video} has stopped after {MAX_RETRIES} retries.")
                     break
