@@ -5,7 +5,6 @@ from ..utils.messages import Messages_UDP
 from ..utils.config import ONODE_PORT, BOOTSTRAP_IP, BOOTSTRAP_PORT, VIDEO_FILES, ONODE_MONITORING_PORT, ASK_FOR_STREAM_PORT
 from typing import List
 
-
 class stream_information(TypedDict):
     is_streaming: bool
     thread: threading.Thread
@@ -146,6 +145,10 @@ class oNode:
                 if data == b'':
                     self.remove_client(addr[0])
                     continue
+                # If parent is None, ignore the message because there's no parent to ask for the stream
+                if self.parent is None:
+                    continue
+                
                 video = Messages_UDP.decode_json(data)
                 Messages_UDP.send(self.socket_ask_for_stream, b'', addr[0], addr[1])
                 self.process_ask_for_stream(video["stream"], addr[0])

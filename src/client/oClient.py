@@ -33,7 +33,7 @@ class oClient:
 	def ask_for_streaming(self) -> None:
 		data = Messages_UDP.send_and_receive(self.socket, Messages_UDP.encode_json({"stream": self.fileName}), self.point_of_presence.read(), ASK_FOR_STREAM_PORT)
 		if data is None:
-			print("Error: Could not get response from point of presence")
+			print("Error: Point of presence cannot stream the video")
 			sys.exit(1)
 
 	def create_client(self) -> None:
