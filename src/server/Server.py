@@ -1,6 +1,6 @@
 import socket, threading, sys, signal
 from .ServerStream import ServerStream
-from ..utils.config import POINTS_OF_PRESENCE, ONODE_PORT, VIDEO_FILES, OCLIENT_PORT
+from ..utils.config import POINTS_OF_PRESENCE, VIDEO_FILES, OCLIENT_PORT, ASK_FOR_STREAM_PORT
 from ..utils.messages import Messages_UDP
 from typing import List
 
@@ -10,7 +10,7 @@ class Server:
 		self.socket_clients.bind(('', OCLIENT_PORT))
 
 		self.socket_oNodes = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		self.socket_oNodes.bind(('', ONODE_PORT))
+		self.socket_oNodes.bind(('', ASK_FOR_STREAM_PORT))
 
 		self.streams = {video: ServerStream(video, port) for video, port in VIDEO_FILES.items()}
 
@@ -41,7 +41,7 @@ class Server:
 		while not self.stop_event.is_set():
 			try:
 				data, addr = self.socket_oNodes.recvfrom(1024)
-				video = Messages_UDP.decode(data)
+				video = Messages_UDP.decode_json(data)["stream"]
 				print(f"Received request for streaming {video} from {addr}")
 				if video in self.streams:
 					Messages_UDP.send(self.socket_oNodes, b'', addr[0], addr[1])
@@ -53,9 +53,7 @@ class Server:
 				print(f"An error occurred: {e}")
 				break
 
-	def set_threads(self) -> None:
-		print("Server is listening on port", ONODE_PORT)
-		
+	def set_threads(self) -> None:		
 		for serverstream in self.streams.values():
 			self.threads.append(threading.Thread(target=serverstream.send_streaming))
 

@@ -2,7 +2,7 @@ import sys, threading, time, socket, signal
 from tkinter import Tk
 from .ClientStream import ClientStream
 from ..utils.messages import Messages_UDP
-from ..utils.config import ONODE_PORT, RTP_PORT, SERVER_IP, OCLIENT_PORT
+from ..utils.config import ONODE_PORT, SERVER_IP, OCLIENT_PORT, ASK_FOR_STREAM_PORT, OCLIENT_PORT_MONITORING
 from ..utils.safemap import SafeMap
 from ..utils.safestring import SafeString
 from typing import List
@@ -10,7 +10,6 @@ from typing import List
 class oClient:
 	def __init__(self, fileName: str):
 		self.serverAddr: str = SERVER_IP
-		self.rtpPort: int = RTP_PORT
 		self.fileName: str = fileName
 		self.root = Tk()
 		# SOCKET TO ASK FOR STREAMING
@@ -21,7 +20,10 @@ class oClient:
 		self.socket_oClient = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.socket_oClient.bind(('', OCLIENT_PORT))
 
+		self.port = OCLIENT_PORT_MONITORING
+
 		self.points_of_presence = SafeMap()
+		self.sockets_pp = {}
 		self.point_of_presence = SafeString()
 
 		self.threads : List[threading.Thread] = []
@@ -29,7 +31,7 @@ class oClient:
 		self.client = None
 
 	def ask_for_streaming(self) -> None:
-		data = Messages_UDP.send_and_receive(self.socket, Messages_UDP.encode(self.fileName), self.point_of_presence.read(), ONODE_PORT)
+		data = Messages_UDP.send_and_receive(self.socket, Messages_UDP.encode_json({"stream": self.fileName}), self.point_of_presence.read(), ASK_FOR_STREAM_PORT)
 		if data is None:
 			print("Error: Could not get response from point of presence")
 			sys.exit(1)
@@ -49,11 +51,16 @@ class oClient:
 		
 	def set_points_presence(self, points_of_presence: list):
 		for point in points_of_presence:
+			socket_pp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+			socket_pp.bind(('', self.port))
+			self.port += 1
 			self.points_of_presence.put(point, float('inf'))
+			self.sockets_pp[point] = socket_pp
 
 	def update_point_of_presence_status(self, point: str) -> None:
 		timestamp = time.time()
-		response = Messages_UDP.send_and_receive(self.socket, b'', point, ONODE_PORT)
+		socket_pp: socket.socket = self.sockets_pp[point]
+		response = Messages_UDP.send_and_receive(socket_pp, b'', point, ONODE_PORT)
 		if response is None:
 			print(f"Error: Could not get response from point of presence {point}")
 			self.points_of_presence.put(point, float('inf'))
@@ -101,6 +108,8 @@ class oClient:
 		for thread in self.threads:
 			thread.join()
 		
+		for socket_pp in self.sockets_pp.values():
+			socket_pp.close()
 		# Close sockets
 		self.socket.close()
 		self.socket_oClient.close()

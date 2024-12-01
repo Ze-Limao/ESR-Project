@@ -40,3 +40,4 @@ class VideoStream:
         self.videoCapture = cv2.VideoCapture(self.filename)
         if not self.videoCapture.isOpened():
             raise IOError("Could not reopen video file.")
+        self.frameNum = 0
