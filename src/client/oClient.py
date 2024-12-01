@@ -56,11 +56,27 @@ class oClient:
 			self.port += 1
 			self.points_of_presence.put(point, float('inf'))
 			self.sockets_pp[point] = socket_pp
+	
+	def notify_old_pop(self, old_point: str) -> None:
+		socket_pp: socket.socket = self.sockets_pp.get(old_point)
+		if socket_pp:
+			Messages_UDP.send_and_receive(socket_pp, b'', old_point, ONODE_PORT)
+			print(f"Notified {old_point} that we no longer want the stream.")
+
+	def average_latency(self, point: str, num_checks: int = 5) -> float:
+		total_latency = 0
+		for _ in range(num_checks):
+			self.update_point_of_presence_status(point)
+			total_latency += self.points_of_presence.get(point)
+			time.sleep(1)
+        
+		return total_latency / num_checks
 
 	def update_point_of_presence_status(self, point: str) -> None:
 		timestamp = time.time()
 		socket_pp: socket.socket = self.sockets_pp[point]
 		response = Messages_UDP.send_and_receive(socket_pp, b'', point, ONODE_PORT)
+  
 		if response is None:
 			print(f"Error: Could not get response from point of presence {point}")
 			self.points_of_presence.put(point, float('inf'))
@@ -68,11 +84,16 @@ class oClient:
 			delay = time.time() - timestamp
 			self.points_of_presence.put(point, delay)
 			print(f"Point of presence {point} has latency {delay}")
+			
+			avg_latency = self.average_latency(point)
+			print(f"Average latency for {point}: {avg_latency}")
+            
 			current_point = self.point_of_presence.read()
 			if current_point == None:
 				self.point_of_presence.write(point)
 			else:
-				if self.points_of_presence.get(current_point) > delay:
+				if self.points_of_presence.get(current_point) > avg_latency:
+					self.notify_old_pop(current_point)
 					self.point_of_presence.write(point)
 
 	def first_check_status_points_presence(self) -> None:
