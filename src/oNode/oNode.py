@@ -2,7 +2,7 @@ import socket, sys, threading, signal, time
 from typing import TypedDict, Dict
 from ..utils.safemap import SafeMap
 from ..utils.messages import Messages_UDP
-from ..utils.config import ONODE_PORT, BOOTSTRAP_IP, BOOTSTRAP_PORT, VIDEO_FILES, ONODE_MONITORING_PORT, ASK_FOR_STREAM_PORT, MAX_RETRIES
+from ..utils.config import ONODE_PORT, BOOTSTRAP_IP, BOOTSTRAP_PORT, VIDEO_FILES, ONODE_MONITORING_PORT, ASK_FOR_STREAM_PORT
 from typing import List
 
 
@@ -106,16 +106,7 @@ class oNode:
                     print("Seding stream to client")
                     Messages_UDP.send(rtpsocket, data, client, stream["port"])
             except socket.timeout:
-                retries += 1
-                print(f"Timeout occurred. Retry {retries}/{MAX_RETRIES}")
-                if retries > MAX_RETRIES:
-                    stream: stream_information = self.streams.get(video)
-                    rtpsocket.close()
-                    stream["is_streaming"] = False
-                    stream["clients"].clear()
-                    self.streams.put(video, stream)
-                    print(f"Stream for video {video} has stopped after {MAX_RETRIES} retries.")
-                    break
+                continue
             except Exception as e:
                 print(f"An error occurred: {e}")
                 break
