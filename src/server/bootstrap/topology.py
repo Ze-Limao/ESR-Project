@@ -6,6 +6,7 @@ from ...utils.safemap import SafeMap
 class Neighbors(TypedDict):
     ip: str
     velocity: float
+    avg_velocity: float
 
 class Node(TypedDict):
     possible_interfaces: List[str]
@@ -178,7 +179,14 @@ class Topology:
         information_node: Node = self.topology.get(ip_node)
         for neighbor in information_node['neighbors']:
             if neighbor['ip'] == ip_neigbour:
-                neighbor['velocity'] = velocity
+                previous_velocity = neighbor['velocity'] if neighbor['velocity'] != float('inf') else float('inf')
+            
+                if previous_velocity == float('inf'):
+                    neighbor['avg_velocity'] = velocity
+                else:
+                    neighbor['avg_velocity'] = (1 - 0.1) * previous_velocity + 0.1 * velocity
+
+                neighbor['velocity'] = 0.8 * neighbor['avg_velocity'] + 0.2 * velocity
                 break
         self.topology.put(ip_node, information_node)
         
