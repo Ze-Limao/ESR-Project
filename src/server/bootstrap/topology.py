@@ -35,8 +35,10 @@ class Topology:
             for neighbor in data['neighbors']:
                 if neighbor['velocity'] == "inf":
                     neighbor['velocity'] = float('inf')
+                    neighbor['avg_velocity'] = float('inf')
                 else:
                     neighbor['velocity'] = float(neighbor['velocity'])
+                    neighbor['avg_velocity'] = float(neighbor['avg_velocity'])
                 object['neighbors'].append(neighbor)
             self.topology.put(node, object)
 
