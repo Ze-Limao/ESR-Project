@@ -8,8 +8,9 @@ from ..utils.safestring import SafeString
 from typing import List
 
 class oClient:
-	def __init__(self, fileName: str):
+	def __init__(self, fileName: str, max_latency_history: int = 10):
 		self.serverAddr: str = SERVER_IP
+		self.max_latency_history = max_latency_history
 		self.fileName: str = fileName
 		self.root = Tk()
 		# SOCKET TO ASK FOR STREAMING
@@ -23,6 +24,7 @@ class oClient:
 		self.port = OCLIENT_PORT_MONITORING
 
 		self.points_of_presence = SafeMap()
+		self.latency_map = SafeMap()
 		self.sockets_pp = {}
 		self.point_of_presence = SafeString()
 
@@ -55,22 +57,14 @@ class oClient:
 			socket_pp.bind(('', self.port))
 			self.port += 1
 			self.points_of_presence.put(point, float('inf'))
+			self.latency_map.put(point, [])
 			self.sockets_pp[point] = socket_pp
 	
 	def notify_old_pop(self, old_point: str) -> None:
 		socket_pp: socket.socket = self.sockets_pp.get(old_point)
 		if socket_pp:
-			Messages_UDP.send_and_receive(socket_pp, b'', old_point, ONODE_PORT)
+			Messages_UDP.send_and_receive(socket_pp, b'', old_point,  ASK_FOR_STREAM_PORT)
 			print(f"Notified {old_point} that we no longer want the stream.")
-
-	def average_latency(self, point: str, num_checks: int = 5) -> float:
-		total_latency = 0
-		for _ in range(num_checks):
-			self.update_point_of_presence_status(point)
-			total_latency += self.points_of_presence.get(point)
-			time.sleep(1)
-        
-		return total_latency / num_checks
 
 	def update_point_of_presence_status(self, point: str) -> None:
 		timestamp = time.time()
@@ -85,7 +79,15 @@ class oClient:
 			self.points_of_presence.put(point, delay)
 			print(f"Point of presence {point} has latency {delay}")
 			
-			avg_latency = self.average_latency(point)
+			current_latencies = self.latency_map.get(point)
+			current_latencies.append(delay)
+   
+			if len(current_latencies) > self.max_latency_history:
+				current_latencies.pop(0)
+    
+			self.latency_map.put(point, current_latencies)
+   
+			avg_latency = self.calculate_average_latency(point)
 			print(f"Average latency for {point}: {avg_latency}")
             
 			current_point = self.point_of_presence.read()
@@ -95,6 +97,13 @@ class oClient:
 				if self.points_of_presence.get(current_point) > avg_latency:
 					self.notify_old_pop(current_point)
 					self.point_of_presence.write(point)
+     
+	def calculate_average_latency(self, point: str) -> float:
+		latencies = self.latency_map.get(point)
+		if latencies:
+			return sum(latencies) / len(latencies)
+		else:
+			return float('inf')
 
 	def first_check_status_points_presence(self) -> None:
 		threads = []
