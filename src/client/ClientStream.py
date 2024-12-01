@@ -10,7 +10,7 @@ CACHE_FILE_EXT = ".jpg"
 
 
 class ClientStream:
-    def __init__(self, master: Tk, fileName: str):
+    def __init__(self, master: Tk, fileName: str, on_close_callback=None):
         self.serverAddr: str = SERVER_IP
         self.serverPort: int = VIDEO_FILES[fileName]
         self.fileName: str = fileName
@@ -18,7 +18,9 @@ class ClientStream:
         self.master.title("RTPClient")
         self.frameNbr = 0
         self.timestamp= str(int(time.time() * 1000))
-        
+        self.on_close_callback = on_close_callback
+        self.destroyed = False
+
         self.rtpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.rtpsocket.bind(('', self.serverPort))
 
@@ -46,11 +48,16 @@ class ClientStream:
         self.thread.start()
 
     def closeStream(self):
+        if self.destroyed:
+            return
         self.deleteCacheFolder()
         self.master.destroy()
         self.rtpsocket.close()
         self.event.set()
         self.thread.join()
+        self.destroyed = True
+        if self.on_close_callback:
+            self.on_close_callback()
     
     def receiveRtp(self):
         while not self.event.is_set():

@@ -37,7 +37,11 @@ class oClient:
 			sys.exit(1)
 
 	def create_client(self) -> None:
-		self.client = ClientStream(self.root, self.fileName)
+		def on_client_close():
+			print("ClientStream has closed. Cleaning up oClient.")
+			self.closeStreaming()  # Clean up oClient resources
+
+		self.client = ClientStream(self.root, self.fileName, on_client_close)
 		self.root.mainloop()
 		
 	def ask_points_presence(self) -> None:
@@ -101,7 +105,11 @@ class oClient:
 			thread.start()
 			self.threads.append(thread)
 
+	def send_stop_straming_message(self) -> None:
+		Messages_UDP.send(self.socket, b'', self.point_of_presence.read(), ASK_FOR_STREAM_PORT)
+
 	def closeStreaming(self) -> None:
+		self.send_stop_straming_message()
 		# Close Threads
 		self.stop_event.set()
 		self.client.closeStream()
@@ -111,6 +119,7 @@ class oClient:
 		for socket_pp in self.sockets_pp.values():
 			socket_pp.close()
 		# Close sockets
+		
 		self.socket.close()
 		self.socket_oClient.close()
 
