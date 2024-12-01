@@ -181,3 +181,13 @@ class Topology:
                 neighbor['velocity'] = velocity
                 break
         self.topology.put(ip_node, information_node)
+        
+        # Update the other way around because if the other node dies will not be able to update the velocity
+        if velocity == float('inf'):
+            information_node: Node = self.topology.get(ip_neigbour)
+            for neighbor in information_node['neighbors']:
+                if neighbor['ip'] == ip_node:
+                    if neighbor['velocity'] != float('inf'):
+                        neighbor['velocity'] = velocity
+                        self.topology.put(ip_neigbour, information_node)
+                        break
