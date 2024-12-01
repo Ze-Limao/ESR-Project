@@ -89,3 +89,15 @@ class ClientStream:
             if file.startswith(CACHE_FILE_NAME) and file.endswith(CACHE_FILE_EXT):
                 os.remove(file)
                 break
+
+    def rebindSocket(self, new_serverAddr: str, new_serverPort: int):
+        self.rtpsocket.close()
+        self.rtpsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.rtpsocket.bind(('', new_serverPort))
+        self.serverAddr = new_serverAddr
+        self.serverPort = new_serverPort
+        print(f"Reconnected to {new_serverAddr}:{new_serverPort}")
+
+    def updatePoP(self, new_serverAddr: str, new_serverPort: int):
+        self.rebindSocket(new_serverAddr, new_serverPort)
+        print(f"Point of Presence updated to {new_serverAddr}:{new_serverPort}")

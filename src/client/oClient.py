@@ -93,6 +93,10 @@ class oClient:
 	def start_thread(self, point: str) -> None:
 		while not self.stop_event.is_set():
 			self.update_point_of_presence_status(point)
+			if self.points_of_presence.get(point) == float('inf'):
+				print(f"Point of presence {point} is down, trying to find a new point of presence")
+				self.first_check_status_points_presence()
+				self.update_client_persistence()
 			time.sleep(5)
 
 	def check_status_points_presence(self) -> None:
@@ -113,6 +117,11 @@ class oClient:
 		# Close sockets
 		self.socket.close()
 		self.socket_oClient.close()
+	
+	def update_client_persistence(self) -> None:
+        new_point_of_presence = self.point_of_presence.read()
+        print(f"Updating PoP in ClientStream to {new_point_of_presence}")
+        self.client.updatePoP(new_point_of_presence, self.sockets_pp[new_point_of_presence].getsockname()[1])
 
 def ctrlc_handler(sig, frame):
     print("Closing the server and the threads...")
