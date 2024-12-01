@@ -81,6 +81,7 @@ class oNode:
                 print(f"Timeout occurred. Retry {retries}/{MAX_RETRIES}")
                 if retries > MAX_RETRIES:
                     stream: stream_information = self.streams.get(video)
+                    rtpsocket.close()
                     stream["is_streaming"] = False
                     stream["clients"].clear()
                     self.streams.put(video, stream)
