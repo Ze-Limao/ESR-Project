@@ -28,6 +28,7 @@ class oClient:
 
 		self.threads : List[threading.Thread] = []
 		self.stop_event = threading.Event()
+		self.client = None
 
 	def ask_for_streaming(self) -> None:
 		data = Messages_UDP.send_and_receive(self.socket, Messages_UDP.encode_json({"stream": self.fileName}), self.point_of_presence.read(), ASK_FOR_STREAM_PORT)
@@ -36,7 +37,7 @@ class oClient:
 			sys.exit(1)
 
 	def create_client(self) -> None:
-		ClientStream(self.root, self.fileName)
+		self.client = ClientStream(self.root, self.fileName)
 		self.root.mainloop()
 		
 	def ask_points_presence(self) -> None:
@@ -103,6 +104,7 @@ class oClient:
 	def closeStreaming(self) -> None:
 		# Close Threads
 		self.stop_event.set()
+		self.client.closeStream()
 		for thread in self.threads:
 			thread.join()
 		

@@ -1,4 +1,4 @@
-import socket, threading
+import socket, threading, os
 from tkinter import *
 from PIL import Image, ImageTk
 from ..utils.config import SERVER_IP, VIDEO_FILES
@@ -46,6 +46,7 @@ class ClientStream:
         self.thread.start()
 
     def closeStream(self):
+        self.deleteCacheFolder()
         self.master.destroy()
         self.rtpsocket.close()
         self.event.set()
@@ -81,3 +82,10 @@ class ClientStream:
         file.close()
               
         return cachename
+
+    def deleteCacheFolder(self):
+        """Delete cache files."""
+        for file in os.listdir("."):
+            if file.startswith(CACHE_FILE_NAME) and file.endswith(CACHE_FILE_EXT):
+                os.remove(file)
+                break
