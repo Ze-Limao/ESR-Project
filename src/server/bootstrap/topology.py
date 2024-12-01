@@ -179,7 +179,7 @@ class Topology:
         information_node: Node = self.topology.get(ip_node)
         for neighbor in information_node['neighbors']:
             if neighbor['ip'] == ip_neigbour:
-                previous_velocity = neighbor['velocity'] if neighbor['velocity'] != float('inf') else float('inf')
+                previous_velocity = neighbor['avg_velocity'] if neighbor['velocity'] != float('inf') else float('inf')
             
                 if previous_velocity == float('inf'):
                     neighbor['avg_velocity'] = velocity
@@ -196,6 +196,7 @@ class Topology:
             for neighbor in information_node['neighbors']:
                 if neighbor['ip'] == ip_node:
                     if neighbor['velocity'] != float('inf'):
+                        neighbor['avg_velocity'] = float('inf')
                         neighbor['velocity'] = velocity
                         self.topology.put(ip_neigbour, information_node)
                         break
