@@ -94,11 +94,12 @@ class oClient:
 			current_point = self.point_of_presence.read()
 			if current_point == None:
 				self.point_of_presence.write(point)
-			else:
+			elif current_point != point:
 				if self.points_of_presence.get(current_point) > avg_latency:
 					self.notify_old_pop(current_point)
 					self.point_of_presence.write(point)
-     
+					self.ask_for_streaming()
+ 
 	def calculate_average_latency(self, point: str) -> float:
 		latencies = self.latency_map.get(point)
 		if latencies:
