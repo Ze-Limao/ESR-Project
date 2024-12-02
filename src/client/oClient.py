@@ -75,6 +75,11 @@ class oClient:
 			print(f"Error: Could not get response from point of presence {point}")
 			self.points_of_presence.put(point, float('inf'))
 			self.latency_map.put(point, [])
+   
+			if self.point_of_presence.read() == point:
+				print(f"Current point of presence {point} is unresponsive. Searching for a new one...")
+				self.find_new_point_of_presence()
+    
 		else:
 			delay = time.time() - timestamp
 			self.points_of_presence.put(point, delay)
@@ -99,6 +104,24 @@ class oClient:
 					self.notify_old_pop(current_point)
 					self.point_of_presence.write(point)
 					self.ask_for_streaming()
+     
+	def find_new_point_of_presence(self) -> None:
+		best_point = None
+		best_latency = float('inf')
+
+		for point in self.points_of_presence.get_keys():
+			latency = self.points_of_presence.get(point)
+			if latency < best_latency:
+				best_latency = latency
+				best_point = point
+
+		if best_point is not None and best_point != self.point_of_presence.read():
+			print(f"Switching to new point of presence: {best_point} with latency {best_latency}")
+			self.point_of_presence.write(best_point)
+			self.ask_for_streaming()
+		else:
+			print("Error: No responsive points of presence found.")
+			sys.exit(1)
  
 	def calculate_average_latency(self, point: str) -> float:
 		latencies = self.latency_map.get(point)
