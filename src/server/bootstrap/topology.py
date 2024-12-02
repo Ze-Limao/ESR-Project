@@ -6,6 +6,7 @@ from ...utils.safemap import SafeMap
 class Neighbors(TypedDict):
     ip: str
     velocity: float
+    avg_velocity: float
 
 class Node(TypedDict):
     possible_interfaces: List[str]
@@ -34,8 +35,10 @@ class Topology:
             for neighbor in data['neighbors']:
                 if neighbor['velocity'] == "inf":
                     neighbor['velocity'] = float('inf')
+                    neighbor['avg_velocity'] = float('inf')
                 else:
                     neighbor['velocity'] = float(neighbor['velocity'])
+                    neighbor['avg_velocity'] = float(neighbor['velocity'])
                 object['neighbors'].append(neighbor)
             self.topology.put(node, object)
 
@@ -178,7 +181,14 @@ class Topology:
         information_node: Node = self.topology.get(ip_node)
         for neighbor in information_node['neighbors']:
             if neighbor['ip'] == ip_neigbour:
-                neighbor['velocity'] = velocity
+                previous_velocity = neighbor['avg_velocity'] if neighbor['avg_velocity'] != float('inf') else float('inf')
+            
+                if previous_velocity == float('inf'):
+                    neighbor['avg_velocity'] = velocity
+                else:
+                    neighbor['avg_velocity'] = (1 - 0.1) * previous_velocity + 0.1 * velocity
+
+                neighbor['velocity'] = 0.8 * neighbor['avg_velocity'] + 0.2 * velocity
                 break
         self.topology.put(ip_node, information_node)
         
@@ -188,6 +198,7 @@ class Topology:
             for neighbor in information_node['neighbors']:
                 if neighbor['ip'] == ip_node:
                     if neighbor['velocity'] != float('inf'):
+                        neighbor['avg_velocity'] = float('inf')
                         neighbor['velocity'] = velocity
                         self.topology.put(ip_neigbour, information_node)
                         break
