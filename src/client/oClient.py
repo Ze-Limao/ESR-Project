@@ -74,6 +74,7 @@ class oClient:
 		if response is None:
 			print(f"Error: Could not get response from point of presence {point}")
 			self.points_of_presence.put(point, float('inf'))
+			self.latency_map.put(point, [])
 		else:
 			delay = time.time() - timestamp
 			self.points_of_presence.put(point, delay)
