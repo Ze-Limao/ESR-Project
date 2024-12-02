@@ -8,8 +8,9 @@ from ..utils.safestring import SafeString
 from typing import List
 
 class oClient:
-	def __init__(self, fileName: str):
+	def __init__(self, fileName: str, max_latency_history: int = 10):
 		self.serverAddr: str = SERVER_IP
+		self.max_latency_history = max_latency_history
 		self.fileName: str = fileName
 		self.root = Tk()
 		# SOCKET TO ASK FOR STREAMING
@@ -23,6 +24,7 @@ class oClient:
 		self.port = OCLIENT_PORT_MONITORING
 
 		self.points_of_presence = SafeMap()
+		self.latency_map = SafeMap()
 		self.sockets_pp = {}
 		self.point_of_presence = SafeString()
 
@@ -55,25 +57,78 @@ class oClient:
 			socket_pp.bind(('', self.port))
 			self.port += 1
 			self.points_of_presence.put(point, float('inf'))
+			self.latency_map.put(point, [])
 			self.sockets_pp[point] = socket_pp
+	
+	def notify_old_pop(self, old_point: str) -> None:
+		socket_pp: socket.socket = self.sockets_pp.get(old_point)
+		if socket_pp:
+			Messages_UDP.send_and_receive(socket_pp, b'', old_point,  ASK_FOR_STREAM_PORT)
+			print(f"Notified {old_point} that we no longer want the stream.")
 
 	def update_point_of_presence_status(self, point: str) -> None:
 		timestamp = time.time()
 		socket_pp: socket.socket = self.sockets_pp[point]
 		response = Messages_UDP.send_and_receive(socket_pp, b'', point, ONODE_PORT)
+  
 		if response is None:
 			print(f"Error: Could not get response from point of presence {point}")
 			self.points_of_presence.put(point, float('inf'))
+			self.latency_map.put(point, [])
+   
+			if self.point_of_presence.read() == point:
+				print(f"Current point of presence {point} is unresponsive. Searching for a new one...")
+				self.find_new_point_of_presence()
+    
 		else:
 			delay = time.time() - timestamp
 			self.points_of_presence.put(point, delay)
 			print(f"Point of presence {point} has latency {delay}")
+			
+			current_latencies = self.latency_map.get(point)
+			current_latencies.append(delay)
+   
+			if len(current_latencies) > self.max_latency_history:
+				current_latencies.pop(0)
+    
+			self.latency_map.put(point, current_latencies)
+   
+			avg_latency = self.calculate_average_latency(point)
+			print(f"Average latency for {point}: {avg_latency}")
+            
 			current_point = self.point_of_presence.read()
 			if current_point == None:
 				self.point_of_presence.write(point)
-			else:
-				if self.points_of_presence.get(current_point) > delay:
+			elif current_point != point:
+				if self.points_of_presence.get(current_point) > avg_latency:
+					self.notify_old_pop(current_point)
 					self.point_of_presence.write(point)
+					self.ask_for_streaming()
+     
+	def find_new_point_of_presence(self) -> None:
+		best_point = None
+		best_latency = float('inf')
+
+		for point in self.points_of_presence.get_keys():
+			latency = self.points_of_presence.get(point)
+			if latency < best_latency:
+				best_latency = latency
+				best_point = point
+
+		if best_point is not None and best_point != self.point_of_presence.read():
+			print(f"Switching to new point of presence: {best_point} with latency {best_latency}")
+			self.point_of_presence.write(best_point)
+			self.ask_for_streaming()
+		else:
+			print("Error: No responsive points of presence found.")
+			sys.exit(1)
+ 
+	def calculate_average_latency(self, point: str) -> float:
+		latencies = self.latency_map.get(point)
+		if latencies:
+			return sum(latencies) / len(latencies)
+		else:
+			return float('inf')
 
 	def first_check_status_points_presence(self) -> None:
 		threads = []
