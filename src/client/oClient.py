@@ -94,7 +94,7 @@ class oClient:
 			current_point = self.point_of_presence.read()
 			if current_point == None:
 				self.point_of_presence.write(point)
-			else:
+			elif current_point != point:
 				if self.points_of_presence.get(current_point) > avg_latency:
 					self.notify_old_pop(current_point)
 					self.point_of_presence.write(point)
