@@ -160,6 +160,9 @@ class oClient:
 		# Close Threads
 		self.stop_event.set()
 		self.client.closeStream()
+		pp = self.point_of_presence.read()
+		if pp != None:
+			self.notify_old_pop(pp)
 		for thread in self.threads:
 			thread.join()
 		
